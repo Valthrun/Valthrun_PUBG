@@ -104,6 +104,15 @@ impl PubgHandle {
             };
         }
 
+        let driver_name = interface
+            .driver_version()
+            .get_application_name()
+            .unwrap_or("<invalid>");
+
+        if driver_name != obfstr!("zenith-driver") {
+            return Err(InterfaceError::NotZenithDriver.into());
+        }
+
         let process = interface
             .list_processes()?
             .into_iter()

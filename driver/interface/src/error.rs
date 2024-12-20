@@ -6,6 +6,9 @@ pub enum InterfaceError {
     #[error("failed to find any memory driver")]
     NoDriverFound,
 
+    #[error("only zenith driver is supported")]
+    NotZenithDriver,
+
     #[error("failed to load driver: {0}")]
     DriverLoadingError(#[from] libloading::Error),
 

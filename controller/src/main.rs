@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    env,
     rc::Rc,
     sync::Arc,
     thread,
@@ -59,9 +60,9 @@ impl Application {
 
 fn main() {
     utils_console::init().expect("Failed to initialize logger");
-
     if let Err(err) = real_main() {
         utils_console::show_critical_error(&format!("{:#}", err));
+        utils_console::flush_frame_logs();
     }
 }
 
@@ -69,7 +70,7 @@ fn real_main() -> anyhow::Result<()> {
     let build_info = version_info()?;
     log::info!(
         "{} v{} ({}). Windows build {}.",
-        obfstr!("Pubg_Valthrun"),
+        obfstr!("Valthrun_PUBG"),
         env!("CARGO_PKG_VERSION"),
         env!("GIT_HASH"),
         build_info.dwBuildNumber
@@ -90,7 +91,7 @@ fn real_main() -> anyhow::Result<()> {
         }
     };
 
-    pubg.add_metrics_record(obfstr!("PubgValthrun-status"), "initializing");
+    pubg.add_metrics_record(obfstr!("Valthrun_PUBG-status"), "initializing");
 
     let mut states = StateRegistry::new(1024 * 8);
     states.set(StatePubgHandle::new(pubg.clone()), ())?;
@@ -107,7 +108,7 @@ fn real_main() -> anyhow::Result<()> {
     let app = Rc::new(RefCell::new(app));
 
     pubg.add_metrics_record(
-        obfstr!("PubgValthrun-status"),
+        obfstr!("Valthrun_PUBG-status"),
         &format!(
             "initialized, vesion: {}, git-hash: {}, win-build: {}",
             env!("CARGO_PKG_VERSION"),
@@ -117,6 +118,7 @@ fn real_main() -> anyhow::Result<()> {
     );
 
     log::info!("App initialized.");
+
     let mut update_fail_count = 0;
     let mut update_timeout: Option<(Instant, Duration)> = None;
 
