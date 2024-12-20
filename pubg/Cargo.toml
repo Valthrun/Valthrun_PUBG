@@ -1,0 +1,18 @@
+[package]
+name = "pubg"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+obfstr = { workspace = true }
+log = { workspace = true }
+serde_json = "1.0.104"
+nalgebra = { workspace = true }
+utils-state = { path = "../utils/state" }
+raw_struct = { workspace = true }
+env_logger = { workspace = true }
+valthrun-driver-interface = { path = "../driver/interface" }
+windows-sys = { version = "0.59", features = ["Win32_System_Memory", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"] }

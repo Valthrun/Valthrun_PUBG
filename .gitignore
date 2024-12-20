@@ -1,0 +1,8 @@
+**/target/
+_*
+!/docs/*
+.vscode
+.idea
+kernel
+docs
+**/pdb_cache/

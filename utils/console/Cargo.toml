@@ -1,0 +1,9 @@
+[package]
+name = "utils-console"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+log = { workspace = true }
+once_cell = "1.19"
