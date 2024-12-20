@@ -56,3 +56,9 @@ jobs:
         run: cargo build --verbose --release --bin pubg_controller
         env:
           RUSTFLAGS: -Ctarget-feature=+crt-static
+
+      - name: Archive Build Artifacts
+        run: |
+          mkdir -p artifacts
+          cp target/release/pubg_controller.exe artifacts/
+        shell: bash

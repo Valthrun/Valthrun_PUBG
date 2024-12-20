@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Extract Version
+        shell: pwsh
+        run: |
+          $VERSION = $env:GITHUB_REF -replace '^refs/tags/v',''
+          echo "Extracted version: $VERSION"
+          echo "ARTIFACT_VERSION=$VERSION" >> $env:GITHUB_ENV
+
+      - name: Build Project
+        run: |
+          cargo build --release --bin pubg_controller
+        env:
+          CARGO_TERM_COLOR: always
+
+      - name: Archive Build Artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          Copy-Item target/release/pubg_controller.exe artifacts/
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: "PUBG_Controller ${{ env.ARTIFACT_VERSION }}"
+          body: |
+            Automated release of PUBG_Controller version ${{ env.ARTIFACT_VERSION }}.
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/pubg_controller.exe
+          asset_name: "pubg_controller_${{ env.ARTIFACT_VERSION }}.exe"
+          asset_content_type: application/octet-stream
