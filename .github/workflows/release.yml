@@ -59,19 +59,72 @@ jobs:
           $lastTag = $(git describe --tags --abbrev=0 "$currentTag^")
           
           # Capture full commit messages
-          $commitMessages = $(git log "$lastTag..$currentTag" --pretty=format:"### %h - %s%n%n%b" --no-merges)
+          $rawCommits = $(git log "$lastTag..$currentTag" --pretty=format:"%h%n%s%n%b%n---COMMIT_SEPARATOR---" --no-merges)
           
-          # Join commit messages with newline to ensure all are captured
-          $formattedCommitMessages = $commitMessages -join "`n`n"
+          # Process commits
+          $processedCommits = @()
+          $currentCommit = @{
+            Hash = $null
+            Subject = $null
+            Body = $null
+          }
+          
+          $rawCommits -split "`n" | ForEach-Object {
+            if ($_ -eq "---COMMIT_SEPARATOR---") {
+              if ($currentCommit.Hash) {
+                $formattedCommit = "### $($currentCommit.Hash) - $($currentCommit.Subject)"
+                if ($currentCommit.Body) {
+                  $formattedCommit += "`n$($currentCommit.Body)"
+                }
+                $processedCommits += $formattedCommit
+              }
+              $currentCommit = @{
+                Hash = $null
+                Subject = $null
+                Body = $null
+              }
+            }
+            elseif (-not $currentCommit.Hash) {
+              $currentCommit.Hash = $_
+            }
+            elseif (-not $currentCommit.Subject) {
+              $currentCommit.Subject = $_
+            }
+            else {
+              if ($_ -and $_ -ne "---COMMIT_SEPARATOR---") {
+                $currentCommit.Body += "$_`n"
+              }
+            }
+          }
+          
+          # Separate commits into categories
+          $features = $processedCommits | Where-Object { $_ -match "### \w+ - feat" }
+          $fixes = $processedCommits | Where-Object { $_ -match "### \w+ - fix" }
+          
+          # Initialize release notes
+          $releaseNotes = "Automated release message`n`n## Changes since $lastTag`n`n"
+          
+          # Add features section if exists
+          if ($features) {
+            $releaseNotes += "### 🚀 Features`n"
+            $releaseNotes += ($features -join "`n`n") + "`n`n"
+          }
+          
+          # Add fixes section if exists
+          if ($fixes) {
+            $releaseNotes += "### 🐛 Bug Fixes`n"
+            $releaseNotes += ($fixes -join "`n`n") + "`n`n"
+          }
           
           # Prepare additional sections
-          $featuresSection = "`n`n## 🛠️  Features`n- Distance from players`n- Players health`n- Angle to players`n`n## 🔧 Setup Requirements`n- Premium Zenith driver (available at https://valth.run/)`n- Windows OS"
+          $featuresSection = "## 🛠️  Features`n- Distance from players`n- Players health`n- Angle to players`n`n## 🔧 Setup Requirements`n- Premium Zenith driver (available at https://valth.run/)`n- Windows OS"
           
-          $releaseNotes = "Automated release message`n`n## Changes since $lastTag`n`n$formattedCommitMessages$featuresSection"
-          $releaseNotes = $releaseNotes -replace "'", "''"
+          # Combine release notes with additional sections
+          $fullReleaseNotes = $releaseNotes + $featuresSection
+          $fullReleaseNotes = $fullReleaseNotes -replace "'", "''"
           
           echo "RELEASE_NOTES<<EOF" >> $env:GITHUB_ENV
-          echo "$releaseNotes" >> $env:GITHUB_ENV
+          echo "$fullReleaseNotes" >> $env:GITHUB_ENV
           echo "EOF" >> $env:GITHUB_ENV
 
       - name: Create GitHub Release
