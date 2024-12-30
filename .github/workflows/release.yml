@@ -48,10 +48,28 @@ jobs:
         id: release_notes
         shell: pwsh
         run: |
-          $lastTag = $(git describe --tags --abbrev=0 --always HEAD^)
-          $commitMessages = $(git log "$lastTag..HEAD" --pretty=format:"- %s%n")
-          $releaseNotes = "Automated release message`n`n## Changes since $lastTag`n`n$commitMessages"
+          # Fetch full history and tags
+          git fetch --unshallow
+          git fetch --tags
+          
+          # Get the current tag from the GitHub ref
+          $currentTag = $env:GITHUB_REF -replace '^refs/tags/',''
+          
+          # Get the previous tag
+          $lastTag = $(git describe --tags --abbrev=0 "$currentTag^")
+          
+          # Capture full commit messages
+          $commitMessages = $(git log "$lastTag..$currentTag" --pretty=format:"### %h - %s%n%n%b" --no-merges)
+          
+          # Join commit messages with newline to ensure all are captured
+          $formattedCommitMessages = $commitMessages -join "`n`n"
+          
+          # Prepare additional sections
+          $featuresSection = "`n`n## 🛠️  Features`n- Distance from players`n- Players health`n- Angle to players`n`n## 🔧 Setup Requirements`n- Premium Zenith driver (available at https://valth.run/)`n- Windows OS"
+          
+          $releaseNotes = "Automated release message`n`n## Changes since $lastTag`n`n$formattedCommitMessages$featuresSection"
           $releaseNotes = $releaseNotes -replace "'", "''"
+          
           echo "RELEASE_NOTES<<EOF" >> $env:GITHUB_ENV
           echo "$releaseNotes" >> $env:GITHUB_ENV
           echo "EOF" >> $env:GITHUB_ENV
@@ -63,7 +81,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: "PUBG_Controller ${{ env.ARTIFACT_VERSION }}"
+          release_name: "v${{ env.ARTIFACT_VERSION }}"
           body: ${{ env.RELEASE_NOTES }}
           draft: false
           prerelease: false
