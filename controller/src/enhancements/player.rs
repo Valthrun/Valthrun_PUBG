@@ -1,10 +1,7 @@
 use anyhow::Context;
 use pubg::{
     decrypt::StateDecrypt,
-    schema::{
-        AActor,
-        APlayerController,
-    },
+    schema::ACharacter,
     state::{
         StateActorList,
         StateLocalPlayerInfo,
@@ -26,7 +23,7 @@ impl Enhancement for PlayerSpyer {
         let local_player_info = ctx.states.resolve::<StateLocalPlayerInfo>(())?;
         let actor_count = actor_array.count()?;
 
-        let mut players_data: Vec<(u32, u32, i32)> = Vec::new();
+        let mut players_data: Vec<(u32, u32, i32, u32)> = Vec::new();
 
         for actor_ptr in actor_array
             .data()?
@@ -40,6 +37,12 @@ impl Enhancement for PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
+            let name = decrypt.get_gname_by_id(&ctx.states, actor.id()?)?;
+
+            if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
+                continue;
+            }
+
             let root_component = match actor
                 .root_component()?
                 .value_reference(memory.view_arc(), &decrypt)
@@ -50,44 +53,13 @@ impl Enhancement for PlayerSpyer {
                 }
             };
 
-            let player_controller = actor.cast::<dyn APlayerController>();
-
-            if player_controller.player_state()?.is_null() {
-                /* Actor is not a player controller */
-                continue;
-            }
-
-            if !player_controller.acknowledged_pawn()?.is_null() {
-                continue;
-            }
-
-            if player_controller.reference_address() == local_player_info.controller_address {
-                log::info!("Skipping local player");
-                continue;
-            }
-
-            let mesh = match player_controller.mesh()?.read_value(memory.view()) {
-                Ok(mesh) => mesh,
-                _ => {
-                    continue;
-                }
-            };
-
-            let mesh = match mesh {
-                Some(mesh) => mesh,
-                None => {
-                    continue;
-                }
-            };
-
-            if mesh <= 0x10000 {
-                continue;
-            }
+            let character = actor.cast::<dyn ACharacter>();
+            let team_id = character.team()?;
 
             let player_info = ctx
                 .states
                 .resolve::<StatePlayerInfo>(StatePlayerInfoParams {
-                    actor,
+                    character,
                     root_component,
                 })?;
 
@@ -124,14 +96,28 @@ impl Enhancement for PlayerSpyer {
                 angle_diff as i32
             };
 
-            players_data.push((distance, player_info.health, angle_diff));
+            players_data.push((distance, player_info.health, angle_diff, team_id));
+        }
+
+        if players_data.is_empty() {
+            return Ok(());
         }
 
         players_data.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+        // TODO: Try to find current team from local player and filter out teamaters during the loop
+        let first_team = players_data[0].3;
+        players_data.retain(|x| x.3 != first_team);
+
+        // Hack: Filter some of the fog of war entries
+        // TODO: Find a better way
+        players_data.dedup_by(|a, b| a.0 == b.0);
+
         let mut count = players_data.len();
         if count > 25 {
             count = 25;
         }
+
         for i in 0..count {
             log::info!(
                 "Distance: {} Health: {} Angle: {}",

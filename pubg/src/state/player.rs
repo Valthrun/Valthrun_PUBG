@@ -15,27 +15,27 @@ use utils_state::{
 
 use crate::{
     schema::{
-        AActor,
+        ACharacter,
         USceneComponent,
     },
     StatePubgMemory,
 };
 
 pub struct StatePlayerInfoParams {
-    pub actor: Reference<dyn AActor>,
+    pub character: Reference<dyn ACharacter>,
     pub root_component: Reference<dyn USceneComponent>,
 }
 
 impl PartialEq for StatePlayerInfoParams {
     fn eq(&self, other: &Self) -> bool {
-        self.actor.reference_address() == other.actor.reference_address()
+        self.character.reference_address() == other.character.reference_address()
             && self.root_component.reference_address() == other.root_component.reference_address()
     }
 }
 
 impl Hash for StatePlayerInfoParams {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.actor.reference_address().hash(state);
+        self.character.reference_address().hash(state);
         self.root_component.reference_address().hash(state);
     }
 }
@@ -61,7 +61,7 @@ impl StatePlayerInfo {
         0x81099E38, 0xE3D62AFB,
     ];
 
-    const HEALTH4: u32 = 0xA30;
+    const HEALTH4: u32 = 0xA48;
 
     pub fn decrypt_player_health(value: &mut [u8], offset: u32) {
         let xor_keys = unsafe {
@@ -74,7 +74,7 @@ impl StatePlayerInfo {
     }
 
     pub fn get_health(
-        actor: Reference<dyn AActor>,
+        actor: Reference<dyn ACharacter>,
         memory: Ref<'_, StatePubgMemory>,
     ) -> anyhow::Result<f32> {
         let b_health_flag = actor.health_flag()? != 3;
@@ -108,7 +108,7 @@ impl State for StatePlayerInfo {
 
     fn create(states: &StateRegistry, params: Self::Parameter) -> anyhow::Result<Self> {
         let memory = states.resolve::<StatePubgMemory>(())?;
-        let health = Self::get_health(params.actor, memory)?;
+        let health = Self::get_health(params.character, memory)?;
         let health = health as u32;
 
         let relative_location = params.root_component.relative_location()?;

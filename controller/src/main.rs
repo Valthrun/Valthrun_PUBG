@@ -83,6 +83,7 @@ fn real_main() -> anyhow::Result<()> {
             if let Some(err) = err.downcast_ref::<InterfaceError>() {
                 if let Some(detailed_message) = err.detailed_message() {
                     utils_console::show_critical_error(&detailed_message);
+                    utils_console::flush_frame_logs();
                     return Ok(());
                 }
             }

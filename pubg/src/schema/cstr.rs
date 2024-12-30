@@ -12,12 +12,20 @@ use raw_struct::{
 };
 
 pub trait CStringUtil {
-    fn read_string(&self, memory: &dyn MemoryView) -> Result<Option<String>, AccessError>;
+    fn read_string(
+        &self,
+        memory: &dyn MemoryView,
+        offset: u64,
+    ) -> Result<Option<String>, AccessError>;
 }
 
 impl CStringUtil for Ptr64<[i8]> {
-    fn read_string(&self, memory: &dyn MemoryView) -> Result<Option<String>, AccessError> {
-        let address = self.address;
+    fn read_string(
+        &self,
+        memory: &dyn MemoryView,
+        offset: u64,
+    ) -> Result<Option<String>, AccessError> {
+        let address = self.address + offset;
         if address == 0 {
             Ok(None)
         } else {
@@ -56,8 +64,12 @@ impl CStringUtil for Ptr64<[i8]> {
 pub struct PtrCStr(Ptr64<[i8]>);
 
 impl CStringUtil for PtrCStr {
-    fn read_string(&self, memory: &dyn MemoryView) -> Result<Option<String>, AccessError> {
-        self.0.read_string(memory)
+    fn read_string(
+        &self,
+        memory: &dyn MemoryView,
+        offset: u64,
+    ) -> Result<Option<String>, AccessError> {
+        self.0.read_string(memory, offset)
     }
 }
 
