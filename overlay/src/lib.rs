@@ -90,6 +90,9 @@ use winit::{
     window::WindowAttributes,
 };
 
+mod render;
+pub use render::RenderBackend;
+
 fn create_window(
     event_loop: &EventLoop<()>,
     title: &str,
@@ -216,16 +219,6 @@ pub struct OverlayOptions {
     pub title: String,
     pub register_fonts_callback: Option<Box<dyn Fn(&mut FontAtlas) -> ()>>,
     pub monitor: Option<i32>,
-}
-
-pub trait RenderBackend {
-    fn update_fonts_texture(&mut self, imgui: &mut imgui::Context);
-    fn render_frame(
-        &mut self,
-        perf: &mut PerfTracker,
-        window: &Window,
-        draw_data: &imgui::DrawData,
-    );
 }
 
 pub struct System {

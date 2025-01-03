@@ -16,7 +16,7 @@ use render::{
 
 use crate::{
     PerfTracker,
-    RenderBackend,
+    render::{RenderBackend, RenderBackendType},
     VulkanError,
 };
 
@@ -218,6 +218,18 @@ impl RenderBackend for VulkanRenderBackend {
             _ => {}
         }
         perf.mark("present");
+    }
+
+    fn backend_type(&self) -> RenderBackendType {
+        RenderBackendType::Vulkan
+    }
+
+    fn initialize(&mut self) -> crate::Result<()> {
+        Ok(())
+    }
+
+    fn cleanup(&mut self) {
+        // Vulkan cleanup is handled in Drop implementation
     }
 }
 

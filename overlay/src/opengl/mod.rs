@@ -32,7 +32,7 @@ use winit::{
 };
 
 use crate::{
-    RenderBackend,
+    render::{RenderBackend, RenderBackendType},
     Result,
 };
 
@@ -85,6 +85,13 @@ impl OpenGLRenderBackend {
 }
 
 impl RenderBackend for OpenGLRenderBackend {
+    fn update_fonts_texture(&mut self, imgui: &mut imgui::Context) {
+        self.imgui_renderer = Some(
+            AutoRenderer::new(glow_context(&self.context), imgui)
+                .expect("failed to create renderer"),
+        );
+    }
+
     fn render_frame(
         &mut self,
         _perf: &mut crate::PerfTracker,
@@ -99,11 +106,17 @@ impl RenderBackend for OpenGLRenderBackend {
         self.surface.swap_buffers(&self.context).unwrap();
     }
 
-    fn update_fonts_texture(&mut self, imgui: &mut imgui::Context) {
-        self.imgui_renderer = Some(
-            AutoRenderer::new(glow_context(&self.context), imgui)
-                .expect("failed to create renderer"),
-        );
+    fn backend_type(&self) -> RenderBackendType {
+        RenderBackendType::OpenGL
+    }
+
+    fn initialize(&mut self) -> Result<()> {
+        // Any additional initialization if needed
+        Ok(())
+    }
+
+    fn cleanup(&mut self) {
+        // Clean up OpenGL resources if needed
     }
 }
 
