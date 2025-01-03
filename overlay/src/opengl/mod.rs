@@ -32,7 +32,10 @@ use winit::{
 };
 
 use crate::{
-    render::{RenderBackend, RenderBackendType},
+    render::{
+        RenderBackend,
+        RenderBackendType,
+    },
     Result,
 };
 

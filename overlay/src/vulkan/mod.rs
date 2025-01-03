@@ -15,8 +15,11 @@ use render::{
 };
 
 use crate::{
+    render::{
+        RenderBackend,
+        RenderBackendType,
+    },
     PerfTracker,
-    render::{RenderBackend, RenderBackendType},
     VulkanError,
 };
 

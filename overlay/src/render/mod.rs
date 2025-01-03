@@ -10,14 +10,9 @@ pub use backend::RenderBackendType;
 pub trait RenderBackend {
     /// Updates the font texture in the rendering backend
     fn update_fonts_texture(&mut self, imgui: &mut imgui::Context);
-    
+
     /// Renders a frame using the provided draw data
-    fn render_frame(
-        &mut self,
-        perf: &mut PerfTracker,
-        window: &Window,
-        draw_data: &DrawData,
-    );
+    fn render_frame(&mut self, perf: &mut PerfTracker, window: &Window, draw_data: &DrawData);
 
     /// Returns the type of the rendering backend
     fn backend_type(&self) -> RenderBackendType;
