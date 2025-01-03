@@ -13,13 +13,16 @@ pub struct Entry {
     pub u_world: EncryptedPtr64<dyn UWorld>,
 }
 
-#[raw_struct(size = 0x168)]
+#[raw_struct(size = 0x9C0)]
 pub struct UWorld {
     #[field(offset = 0x150)]
     pub u_level: EncryptedPtr64<dyn ULevel>,
 
     #[field(offset = 0x160)]
     pub game_instance: EncryptedPtr64<dyn GameInstance>,
+
+    #[field(offset = 0x9B4)]
+    pub position: [f32; 3],
 }
 
 #[raw_struct(size = 0xC0)]
@@ -136,13 +139,16 @@ pub struct ACharacter {
 }
 impl APawn for dyn ACharacter {}
 
-#[raw_struct(size = 0x1774)]
+#[raw_struct(size = 0x1CF4)]
 pub struct APlayerCameraManager {
     #[field(offset = 0x175C)]
     pub camera_rot: [f32; 3],
 
     #[field(offset = 0x1768)]
     pub camera_pos: [f32; 3],
+
+    #[field(offset = 0x1CF0)]
+    pub camera_fov: f32,
 }
 impl AActor for dyn APlayerCameraManager {}
 

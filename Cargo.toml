@@ -6,7 +6,8 @@ members = [
     "driver/protocol",
     "driver/interface",
 
-    "controller",
+    "controller_console",
+    "controller_overlay",
     "image_dumper",
     "pubg",
 ]
@@ -36,3 +37,4 @@ env_logger = "0.10.0"
 obfstr = "0.4.3"
 nalgebra = "0.32.3"
 mint = "0.5.9"
+winit = { version = "0.30.5", features = ["rwh_06"] }

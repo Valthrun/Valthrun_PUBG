@@ -3,11 +3,13 @@ use std::{
         self,
         Write,
     },
+    str::FromStr,
     sync::Mutex,
 };
 
 use log::{
     Level,
+    LevelFilter,
     Log,
     Metadata,
     Record,
@@ -23,7 +25,7 @@ pub struct FrameLogger;
 
 impl Log for FrameLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= Level::Info
+        metadata.level() <= Level::Trace
     }
 
     fn log(&self, record: &Record) {
@@ -54,7 +56,14 @@ pub fn init() -> Result<(), SetLoggerError> {
     // Clear screen and scroll buffer, hide cursor
     print!("\x1B[2J\x1B[3J\x1B[H\x1B[?25l");
     io::stdout().flush().unwrap();
-    log::set_logger(&FrameLogger).map(|()| log::set_max_level(log::LevelFilter::Info))
+
+    // Read from RUST_LOG environment variable and set max level
+    let max_level = std::env::var("RUST_LOG")
+        .map(|level| LevelFilter::from_str(&level).unwrap_or(LevelFilter::Info))
+        .unwrap_or(LevelFilter::Info);
+
+    // Set our custom logger
+    log::set_logger(&FrameLogger).map(|()| log::set_max_level(max_level))
 }
 
 pub fn flush_frame_logs() {
@@ -72,7 +81,7 @@ pub fn flush_frame_logs() {
         *is_first_flush = false;
     } else {
         // On subsequent flushes, reserve first 3 lines
-        let available_height = height.saturating_sub(3);
+        let available_height = height.saturating_sub(30);
         let start = if frame_buffer.len() > available_height {
             frame_buffer.len() - available_height
         } else {

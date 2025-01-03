@@ -15,6 +15,7 @@ pub struct StateLocalPlayerInfo {
     pub controller_address: u64,
     pub location: [f32; 3],
     pub rotation: [f32; 3],
+    pub fov_angle: f32,
 }
 
 impl State for StateLocalPlayerInfo {
@@ -51,11 +52,13 @@ impl State for StateLocalPlayerInfo {
 
         let location = player_camera_manager.camera_pos()?;
         let rotation = player_camera_manager.camera_rot()?;
+        let fov_angle = player_camera_manager.camera_fov()?;
 
         Ok(Self {
             controller_address,
             location,
             rotation,
+            fov_angle,
         })
     }
 
