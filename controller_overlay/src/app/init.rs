@@ -8,7 +8,7 @@ use std::{
     error::Error,
 };
 use anyhow::Context;
-use imgui::{FontConfig, FontSource};
+use imgui::FontSource;
 use obfstr::obfstr;
 use overlay::{OverlayOptions, OverlayError, VulkanError, LoadingError, System};
 use pubg::{PubgHandle, InterfaceError, StatePubgHandle, StatePubgMemory};
@@ -22,7 +22,10 @@ use crate::{
     enhancements::PlayerSpyer,
 };
 
-use super::core::{Application, AppFonts};
+use super::{
+    core::Application,
+    fonts::AppFonts,
+};
 
 pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     env_logger::Builder::from_default_env()
@@ -66,32 +69,14 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     states.set(settings, ())?;
 
     log::debug!("Initialize overlay");
-    let app_fonts: AppFonts = Default::default();
+    let app_fonts = AppFonts::new();
 
     let mut rng = thread_rng();
     let random_app_name = format!("{:x}", rng.next_u64());
 
     let overlay_options = OverlayOptions {
         title: random_app_name,
-        register_fonts_callback: Some(Box::new({
-            let app_fonts = app_fonts.clone();
-
-            move |atlas| {
-                let font_size = 18.0;
-                let valthrun_font = atlas.add_font(&[FontSource::TtfData {
-                    data: include_bytes!("../../resources/Valthrun-Regular.ttf"),
-                    size_pixels: font_size,
-                    config: Some(FontConfig {
-                        rasterizer_multiply: 1.5,
-                        oversample_h: 4,
-                        oversample_v: 4,
-                        ..FontConfig::default()
-                    }),
-                }]);
-
-                app_fonts.valthrun.set_id(valthrun_font);
-            }
-        })),
+        register_fonts_callback: Some(AppFonts::create_font_config_callback(app_fonts.clone())),
         monitor: selected_monitor,
     };
 

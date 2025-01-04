@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use imgui::{Condition, FontId};
+use imgui::Condition;
 use obfstr::obfstr;
 use overlay::{SystemRuntimeController, UnicodeTextRenderer};
 use pubg::PubgHandle;
@@ -20,31 +20,11 @@ use crate::{
     view::ViewController,
 };
 
-use super::input::KeyboardInput;
+use super::{input::KeyboardInput, fonts::AppFonts};
 
 pub struct UpdateContext<'a> {
     pub input: &'a dyn KeyboardInput,
     pub states: &'a StateRegistry,
-}
-
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct FontReference {
-    inner: Arc<RefCell<Option<FontId>>>,
-}
-
-impl FontReference {
-    pub fn font_id(&self) -> Option<FontId> {
-        self.inner.borrow().clone()
-    }
-
-    pub fn set_id(&self, font_id: FontId) {
-        *self.inner.borrow_mut() = Some(font_id);
-    }
-}
-
-#[derive(Clone, Default)]
-pub struct AppFonts {
-    pub valthrun: FontReference,
 }
 
 pub struct Application {
