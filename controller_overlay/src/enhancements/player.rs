@@ -10,17 +10,20 @@ use pubg::{
     },
     StatePubgMemory,
 };
+use utils_state::StateRegistry;
+
+use crate::app::core::UpdateContext;
 
 use super::Enhancement;
 
 pub struct PlayerSpyer {}
 
 impl Enhancement for PlayerSpyer {
-    fn update(&mut self, ctx: &crate::UpdateContext) -> anyhow::Result<()> {
-        let memory = ctx.states.resolve::<StatePubgMemory>(())?;
-        let actor_array = ctx.states.resolve::<StateActorList>(())?;
-        let decrypt = ctx.states.resolve::<StateDecrypt>(())?;
-        let local_player_info = ctx.states.resolve::<StateLocalPlayerInfo>(())?;
+    fn update(&mut self, ctx: &UpdateContext) -> anyhow::Result<()> {
+        let memory = ctx.states.resolve_mut::<StatePubgMemory>(())?;
+        let actor_array = ctx.states.resolve_mut::<StateActorList>(())?;
+        let decrypt = ctx.states.resolve_mut::<StateDecrypt>(())?;
+        let local_player_info = ctx.states.resolve_mut::<StateLocalPlayerInfo>(())?;
         let actor_count = actor_array.count()?;
 
         let mut players_data: Vec<(u32, u32, i32, u32)> = Vec::new();
@@ -37,7 +40,7 @@ impl Enhancement for PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = decrypt.get_gname_by_id(&ctx.states, actor.id()?)?;
+            let name = decrypt.get_gname_by_id(ctx.states, actor.id()?)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;
@@ -56,12 +59,13 @@ impl Enhancement for PlayerSpyer {
             let character = actor.cast::<dyn ACharacter>();
             let team_id = character.team()?;
 
+            let params = StatePlayerInfoParams {
+                character,
+                root_component,
+            };
             let player_info = ctx
                 .states
-                .resolve::<StatePlayerInfo>(StatePlayerInfoParams {
-                    character,
-                    root_component,
-                })?;
+                .resolve_mut::<StatePlayerInfo>(params)?;
 
             let distance = ((player_info.position[0] - local_player_info.location[0]).powi(2)
                 + (player_info.position[1] - local_player_info.location[1]).powi(2)
@@ -132,9 +136,9 @@ impl Enhancement for PlayerSpyer {
 
     fn render(
         &self,
-        states: &utils_state::StateRegistry,
-        ui: &imgui::Ui,
-        unicode_text: &overlay::UnicodeTextRenderer,
+        _states: &StateRegistry,
+        _ui: &imgui::Ui,
+        _unicode_text: &overlay::UnicodeTextRenderer,
     ) -> anyhow::Result<()> {
         Ok(())
     }

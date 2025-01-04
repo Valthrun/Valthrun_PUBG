@@ -1,7 +1,10 @@
 use overlay::UnicodeTextRenderer;
 use utils_state::StateRegistry;
 
-use crate::settings::AppSettings;
+use crate::{
+    settings::AppSettings,
+    app::core::UpdateContext,
+};
 
 pub trait Enhancement {
     fn update(&mut self, ctx: &UpdateContext) -> anyhow::Result<()>;
@@ -31,5 +34,3 @@ pub trait Enhancement {
 
 mod player;
 pub use player::*;
-
-use crate::UpdateContext;

@@ -28,7 +28,6 @@ use super::{
 };
 use crate::{
     settings::{
-        save_app_settings,
         AppSettings,
         EspBoxType,
         EspHeadDot,
@@ -40,7 +39,7 @@ use crate::{
         ImGuiKey,
         ImguiComboEnum,
     },
-    Application,
+    app::core::Application,
 };
 
 enum EspPlayerActiveHeader {
