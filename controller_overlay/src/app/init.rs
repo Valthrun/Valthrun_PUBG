@@ -1,14 +1,10 @@
 use std::{
     rc::Rc,
     cell::RefCell,
-    sync::{
-        Arc,
-        atomic::AtomicBool,
-    },
+    sync::{atomic::AtomicBool},
     error::Error,
 };
 use anyhow::Context;
-use imgui::FontSource;
 use obfstr::obfstr;
 use overlay::{OverlayOptions, OverlayError, VulkanError, LoadingError, System};
 use pubg::{PubgHandle, InterfaceError, StatePubgHandle, StatePubgMemory};
@@ -25,6 +21,7 @@ use crate::{
 use super::{
     core::Application,
     fonts::AppFonts,
+    state::{LocalPubgHandle, LocalPubgMemory},
 };
 
 pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
@@ -64,8 +61,8 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     pubg.add_metrics_record(obfstr!("Valthrun_PUBG-status"), "initializing");
 
     let mut states = StateRegistry::new(1024 * 8);
-    states.set(StatePubgHandle::new(pubg.clone()), ())?;
-    states.set(StatePubgMemory::new(pubg.create_memory_view()), ())?;
+    states.set(LocalPubgHandle::from(StatePubgHandle::new(pubg.clone())), ())?;
+    states.set(LocalPubgMemory::from(StatePubgMemory::new(pubg.create_memory_view())), ())?;
     states.set(settings, ())?;
 
     log::debug!("Initialize overlay");

@@ -9,7 +9,10 @@ use std::{
 
 use imgui::Condition;
 use obfstr::obfstr;
-use overlay::{SystemRuntimeController, UnicodeTextRenderer};
+use overlay::{
+    SystemRuntimeController, 
+    UnicodeTextRenderer,
+};
 use pubg::PubgHandle;
 use utils_state::StateRegistry;
 use winit::window::Window;
@@ -17,13 +20,14 @@ use winit::window::Window;
 use crate::{
     enhancements::Enhancement,
     settings::{save_app_settings, AppSettings, SettingsUI},
-    view::ViewController,
+    app::
+        state::LocalViewController
+    ,
 };
 
-use super::{input::KeyboardInput, fonts::AppFonts};
+use super::fonts::AppFonts;
 
 pub struct UpdateContext<'a> {
-    pub input: &'a dyn KeyboardInput,
     pub states: &'a StateRegistry,
 }
 
@@ -134,13 +138,12 @@ impl Application {
         }
 
         self.states.invalidate_states();
-        if let Ok(mut view_controller) = self.states.resolve_mut::<ViewController>(()) {
+        if let Ok(mut view_controller) = self.states.resolve_mut::<LocalViewController>(()) {
             view_controller.update_screen_bounds(mint::Vector2::from_slice(&ui.io().display_size));
         }
 
         let update_context = UpdateContext {
             states: &self.states,
-            input: ui,
         };
 
         for enhancement in &self.enhancements {

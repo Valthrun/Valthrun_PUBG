@@ -12,11 +12,6 @@ pub struct FontReference {
 }
 
 impl FontReference {
-    /// Creates a new empty font reference.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Gets the current font ID if one is set.
     pub fn font_id(&self) -> Option<FontId> {
         self.inner.borrow().clone()

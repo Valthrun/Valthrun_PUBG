@@ -17,9 +17,9 @@ fn main() {
 }
 
 fn real_main() -> anyhow::Result<()> {
-    let (mut overlay, app) = app::init::initialize_app()?;
+    let (overlay, app) = app::init::initialize_app()?;
 
-    let mut update_fail_count = 0;
+    //let mut update_fail_count = 0;
     let mut update_timeout: Option<(Instant, Duration)> = None;
 
     overlay.main_loop(
@@ -47,7 +47,7 @@ fn real_main() -> anyhow::Result<()> {
                 }
             }
 
-            if let Err(err) = app.update(ui) {
+            if let Err(_) = app.update(ui) {
                 /*if update_fail_count >= 10 {
                     log::error!("Over 10 errors occurred. Waiting 1s and try again.");
                     log::error!("Last error: {:#}", err);

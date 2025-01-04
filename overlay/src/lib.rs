@@ -3,7 +3,7 @@
 mod clipboard;
 mod error;
 pub use error::*;
-mod input;
+pub mod input;
 mod window_tracker;
 
 mod opengl;

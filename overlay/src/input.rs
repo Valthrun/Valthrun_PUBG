@@ -1,6 +1,7 @@
 use imgui::{
     Key,
     MouseButton,
+    Io,
 };
 use imgui_winit_support::winit::window::Window;
 use windows::Win32::{
@@ -34,38 +35,104 @@ use windows::Win32::{
 
 const VK_KEY_MAX: usize = 256;
 
+/// Trait for reading keyboard input state
+pub trait KeyboardInput {
+    /// Check if a key is currently held down
+    fn is_key_down(&self, key: Key) -> bool;
+    
+    /// Check if a key was just pressed
+    /// If repeating is true, will trigger multiple times while held
+    fn is_key_pressed(&self, key: Key, repeating: bool) -> bool;
+}
+
+/// Trait for reading mouse input state
+pub trait MouseInput {
+    /// Get the current mouse position in screen coordinates
+    fn mouse_position(&self) -> [f32; 2];
+    
+    /// Check if a mouse button is currently held down
+    fn is_button_down(&self, button: MouseButton) -> bool;
+    
+    /// Check if a mouse button was just pressed
+    fn is_button_pressed(&self, button: MouseButton) -> bool;
+}
+
+/// Combined input interface for both keyboard and mouse
+pub trait InputSystem: KeyboardInput + MouseInput {
+    /// Update the input state
+    fn update(&mut self, window: &Window, io: &mut Io);
+}
+
 #[derive(Debug, Default)]
 pub struct MouseInputSystem {
     hwnd: HWND,
+    position: [f32; 2],
 }
+
 impl MouseInputSystem {
     pub fn new(hwnd: HWND) -> Self {
-        Self { hwnd }
+        Self { 
+            hwnd,
+            position: [0.0, 0.0],
+        }
     }
 
-    pub fn update(&mut self, window: &Window, io: &mut imgui::Io) {
+    pub fn update(&mut self, window: &Window, io: &mut Io) {
         let mut point: POINT = Default::default();
         unsafe {
             GetCursorPos(&mut point);
             ScreenToClient(self.hwnd, &mut point);
         };
 
-        io.add_mouse_pos_event([
+        self.position = [
             (point.x as f64 / window.scale_factor()) as f32,
             (point.y as f64 / window.scale_factor()) as f32,
-        ]);
+        ];
+        io.add_mouse_pos_event(self.position);
+    }
+}
+
+impl MouseInput for MouseInputSystem {
+    fn mouse_position(&self) -> [f32; 2] {
+        self.position
+    }
+
+    fn is_button_down(&self, button: MouseButton) -> bool {
+        // Use the ImGui IO state since we're already tracking it there
+        unsafe {
+            let key_state = match button {
+                MouseButton::Left => GetAsyncKeyState(VK_LBUTTON.0 as i32),
+                MouseButton::Right => GetAsyncKeyState(VK_RBUTTON.0 as i32),
+                MouseButton::Middle => GetAsyncKeyState(VK_MBUTTON.0 as i32),
+                MouseButton::Extra1 => GetAsyncKeyState(VK_XBUTTON1.0 as i32),
+                MouseButton::Extra2 => GetAsyncKeyState(VK_XBUTTON2.0 as i32),
+            } as u16;
+            (key_state & 0x8000) > 0
+        }
+    }
+
+    fn is_button_pressed(&self, button: MouseButton) -> bool {
+        // Use the ImGui IO state since we're already tracking it there
+        unsafe {
+            let key_state = match button {
+                MouseButton::Left => GetAsyncKeyState(VK_LBUTTON.0 as i32),
+                MouseButton::Right => GetAsyncKeyState(VK_RBUTTON.0 as i32),
+                MouseButton::Middle => GetAsyncKeyState(VK_MBUTTON.0 as i32),
+                MouseButton::Extra1 => GetAsyncKeyState(VK_XBUTTON1.0 as i32),
+                MouseButton::Extra2 => GetAsyncKeyState(VK_XBUTTON2.0 as i32),
+            } as u16;
+            (key_state & 0x1) > 0
+        }
     }
 }
 
 /// Simple input system using the global mouse / keyboard state.
 /// This does not require the need to process window messages or the imgui overlay to be active.
 #[derive(Debug, Default)]
-#[allow(unused)]
 pub struct KeyboardInputSystem {
     key_states: Vec<bool>,
 }
 
-#[allow(unused)]
 impl KeyboardInputSystem {
     pub fn new() -> Self {
         Self {
@@ -73,7 +140,7 @@ impl KeyboardInputSystem {
         }
     }
 
-    pub fn update(&mut self, _window: &Window, io: &mut imgui::Io) {
+    pub fn update(&mut self, _window: &Window, io: &mut Io) {
         for vkey in 0..VK_KEY_MAX {
             let key_state = unsafe { GetAsyncKeyState(vkey as i32) as u16 };
             let pressed = (key_state & 0x8000) > 0;
@@ -97,12 +164,79 @@ impl KeyboardInputSystem {
             if let Some(button) = mouse_button {
                 io.add_mouse_button_event(button, pressed);
             } else if let Some(key) = to_imgui_key(vkey) {
-                // log::trace!("Key toogle {:?}: {}", key, pressed);
                 io.add_key_event(key, pressed);
             } else {
                 log::trace!("Missing ImGui key for {:?}", vkey);
             }
         }
+    }
+}
+
+impl KeyboardInput for KeyboardInputSystem {
+    fn is_key_down(&self, key: Key) -> bool {
+        if let Some(vkey) = from_imgui_key(key) {
+            self.key_states[vkey.0 as usize]
+        } else {
+            false
+        }
+    }
+
+    fn is_key_pressed(&self, key: Key, _repeating: bool) -> bool {
+        if let Some(vkey) = from_imgui_key(key) {
+            unsafe {
+                let key_state = GetAsyncKeyState(vkey.0 as i32) as u16;
+                (key_state & 0x1) > 0
+            }
+        } else {
+            false
+        }
+    }
+}
+
+/// Combined input system that handles both keyboard and mouse input
+#[derive(Debug, Default)]
+pub struct CombinedInputSystem {
+    keyboard: KeyboardInputSystem,
+    mouse: MouseInputSystem,
+}
+
+impl CombinedInputSystem {
+    pub fn new(hwnd: HWND) -> Self {
+        Self {
+            keyboard: KeyboardInputSystem::new(),
+            mouse: MouseInputSystem::new(hwnd),
+        }
+    }
+}
+
+impl KeyboardInput for CombinedInputSystem {
+    fn is_key_down(&self, key: Key) -> bool {
+        self.keyboard.is_key_down(key)
+    }
+
+    fn is_key_pressed(&self, key: Key, repeating: bool) -> bool {
+        self.keyboard.is_key_pressed(key, repeating)
+    }
+}
+
+impl MouseInput for CombinedInputSystem {
+    fn mouse_position(&self) -> [f32; 2] {
+        self.mouse.mouse_position()
+    }
+
+    fn is_button_down(&self, button: MouseButton) -> bool {
+        self.mouse.is_button_down(button)
+    }
+
+    fn is_button_pressed(&self, button: MouseButton) -> bool {
+        self.mouse.is_button_pressed(button)
+    }
+}
+
+impl InputSystem for CombinedInputSystem {
+    fn update(&mut self, window: &Window, io: &mut Io) {
+        self.keyboard.update(window, io);
+        self.mouse.update(window, io);
     }
 }
 
@@ -219,14 +353,39 @@ fn to_imgui_key(keycode: VIRTUAL_KEY) -> Option<Key> {
     }
 }
 
-fn handle_key_modifier(io: &mut imgui::Io, key: VIRTUAL_KEY, down: bool) {
+fn from_imgui_key(key: Key) -> Option<VIRTUAL_KEY> {
+    use windows::Win32::UI::Input::KeyboardAndMouse::*;
+
+    match key {
+        Key::Tab => Some(VK_TAB),
+        Key::LeftArrow => Some(VK_LEFT),
+        Key::RightArrow => Some(VK_RIGHT),
+        Key::LeftShift => Some(VK_LSHIFT),
+        Key::LeftAlt => Some(VK_LMENU),
+        Key::UpArrow => Some(VK_UP),
+        Key::DownArrow => Some(VK_DOWN),
+        Key::PageUp => Some(VK_PRIOR),
+        Key::PageDown => Some(VK_NEXT),
+        Key::Home => Some(VK_HOME),
+        Key::End => Some(VK_END),
+        Key::Insert => Some(VK_INSERT),
+        Key::Delete => Some(VK_DELETE),
+        Key::Backspace => Some(VK_BACK),
+        Key::Space => Some(VK_SPACE),
+        Key::Enter => Some(VK_RETURN),
+        Key::Escape => Some(VK_ESCAPE),
+        _ => None,
+    }
+}
+
+fn handle_key_modifier(io: &mut Io, key: VIRTUAL_KEY, down: bool) {
     if key == VK_LSHIFT || key == VK_RSHIFT {
-        io.add_key_event(imgui::Key::ModShift, down);
+        io.add_key_event(Key::ModShift, down);
     } else if key == VK_LCONTROL || key == VK_CONTROL {
-        io.add_key_event(imgui::Key::ModCtrl, down);
+        io.add_key_event(Key::ModCtrl, down);
     } else if key == VK_MENU || key == VK_LMENU || key == VK_RMENU {
-        io.add_key_event(imgui::Key::ModAlt, down);
+        io.add_key_event(Key::ModAlt, down);
     } else if key == VK_LWIN || key == VK_RWIN {
-        io.add_key_event(imgui::Key::ModSuper, down);
+        io.add_key_event(Key::ModSuper, down);
     }
 }

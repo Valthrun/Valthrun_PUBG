@@ -1,18 +1,13 @@
 use std::{
-    collections::{
-        BTreeMap,
-        HashMap,
-    },
+    collections::
+        BTreeMap
+    ,
     fs::File,
     io::{
         BufReader,
         BufWriter,
     },
     path::PathBuf,
-    sync::atomic::{
-        AtomicUsize,
-        Ordering,
-    },
 };
 
 use anyhow::Context;
@@ -21,12 +16,10 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use serde_with::with_prefix;
 use utils_state::{
     State,
     StateCacheType,
 };
-
 use super::{
     Color,
     EspConfig,
@@ -60,19 +53,12 @@ fn default_color<const R: u8, const G: u8, const B: u8, const A: u8>() -> Color 
 fn default_key_settings() -> HotKey {
     Key::Pause.into()
 }
-fn default_key_trigger_bot() -> Option<HotKey> {
-    Some(Key::MouseMiddle.into())
-}
 fn default_key_none() -> Option<HotKey> {
     None
 }
 
 fn default_esp_mode() -> KeyToggleMode {
     KeyToggleMode::AlwaysOn
-}
-
-fn default_trigger_bot_mode() -> KeyToggleMode {
-    KeyToggleMode::Trigger
 }
 
 fn default_esp_configs() -> BTreeMap<String, EspConfig> {
@@ -101,111 +87,6 @@ pub enum KeyToggleMode {
     Off,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-pub enum GrenadeType {
-    Smoke,
-    Molotov,
-    Flashbang,
-    Explosive,
-}
-
-impl GrenadeType {
-    pub fn display_name(&self) -> &'static str {
-        match self {
-            Self::Smoke => "Smoke",
-            Self::Molotov => "Molotov",
-            Self::Flashbang => "Flashbang",
-            Self::Explosive => "Explosive",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-pub enum GrenadeSortOrder {
-    Alphabetical,
-    AlphabeticalReverse,
-}
-
-impl GrenadeSortOrder {
-    pub fn default() -> Self {
-        Self::Alphabetical
-    }
-
-    pub fn sort(&self, values: &mut Vec<&GrenadeSpotInfo>) {
-        match self {
-            Self::Alphabetical => {
-                values.sort_unstable_by(|a, b| a.name.cmp(&b.name));
-            }
-            Self::AlphabeticalReverse => {
-                values.sort_unstable_by(|a, b| b.name.cmp(&a.name));
-            }
-        }
-    }
-}
-
-static GRENADE_SPOT_ID_INDEX: AtomicUsize = AtomicUsize::new(1);
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
-pub struct GrenadeSpotInfo {
-    #[serde(skip, default = "GrenadeSpotInfo::new_id")]
-    pub id: usize,
-    pub grenade_types: Vec<GrenadeType>,
-
-    pub name: String,
-    pub description: String,
-
-    /// The eye position of the player
-    pub eye_position: [f32; 3],
-    pub eye_direction: [f32; 2],
-}
-impl GrenadeSpotInfo {
-    pub fn new_id() -> usize {
-        GRENADE_SPOT_ID_INDEX.fetch_add(1, Ordering::Relaxed)
-    }
-}
-#[derive(Clone, Deserialize, Serialize)]
-pub struct GrenadeSettings {
-    #[serde(default = "bool_true")]
-    pub active: bool,
-
-    #[serde(default = "GrenadeSortOrder::default")]
-    pub ui_sort_order: GrenadeSortOrder,
-
-    #[serde(default = "default_f32::<150, 1>")]
-    pub circle_distance: f32,
-
-    #[serde(default = "default_f32::<20, 1>")]
-    pub circle_radius: f32,
-
-    #[serde(default = "default_usize::<32>")]
-    pub circle_segments: usize,
-
-    #[serde(default = "default_f32::<1, 10>")]
-    pub angle_threshold_yaw: f32,
-
-    #[serde(default = "default_f32::<5, 10>")]
-    pub angle_threshold_pitch: f32,
-
-    #[serde(default = "default_color::<255, 255, 255, 255>")]
-    pub color_position: Color,
-
-    #[serde(default = "default_color::<0, 255, 0, 255>")]
-    pub color_position_active: Color,
-
-    #[serde(default = "default_color::<255, 0, 0, 255>")]
-    pub color_angle: Color,
-
-    #[serde(default = "default_color::<0, 255, 0, 255>")]
-    pub color_angle_active: Color,
-
-    #[serde(default)]
-    pub map_spots: HashMap<String, Vec<GrenadeSpotInfo>>,
-
-    #[serde(default = "bool_true")]
-    pub grenade_background: bool,
-}
-
-with_prefix!(serde_prefix_grenade_helper "grenade_helper");
-
 #[derive(Clone, Deserialize, Serialize)]
 pub struct AppSettings {
     #[serde(default = "default_key_settings")]
@@ -224,43 +105,7 @@ pub struct AppSettings {
     pub esp_settings_enabled: BTreeMap<String, bool>,
 
     #[serde(default = "bool_true")]
-    pub bomb_timer: bool,
-
-    #[serde(default = "bool_false")]
-    pub spectators_list: bool,
-
-    #[serde(default = "bool_true")]
     pub valthrun_watermark: bool,
-
-    #[serde(default = "default_i32::<16364>")]
-    pub mouse_x_360: i32,
-
-    #[serde(default = "default_trigger_bot_mode")]
-    pub trigger_bot_mode: KeyToggleMode,
-
-    #[serde(default = "default_key_trigger_bot")]
-    pub key_trigger_bot: Option<HotKey>,
-
-    #[serde(default = "bool_true")]
-    pub trigger_bot_team_check: bool,
-
-    #[serde(default = "default_u32::<10>")]
-    pub trigger_bot_delay_min: u32,
-
-    #[serde(default = "default_u32::<20>")]
-    pub trigger_bot_delay_max: u32,
-
-    #[serde(default = "default_u32::<400>")]
-    pub trigger_bot_shot_duration: u32,
-
-    #[serde(default = "bool_false")]
-    pub trigger_bot_check_target_after_delay: bool,
-
-    #[serde(default = "bool_false")]
-    pub aim_assist_recoil: bool,
-
-    #[serde(default = "default_u32::<1>")]
-    pub aim_assist_recoil_min_bullets: u32,
 
     #[serde(default = "bool_true")]
     pub hide_overlay_from_screen_capture: bool,
@@ -270,15 +115,6 @@ pub struct AppSettings {
 
     #[serde(default = "bool_true")]
     pub metrics: bool,
-
-    #[serde(default)]
-    pub web_radar_url: Option<String>,
-
-    #[serde(default = "bool_false")]
-    pub web_radar_advanced_settings: bool,
-
-    #[serde(flatten, with = "serde_prefix_grenade_helper")]
-    pub grenade_helper: GrenadeSettings,
 
     #[serde(default = "default_i32::<0>")]
     pub selected_monitor: i32,
