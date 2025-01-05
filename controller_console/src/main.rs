@@ -46,7 +46,6 @@ impl Application {
             states: &self.states,
         };
 
-        log::info!("Enhancements count: {}", self.enhancements.len());
         for enhancement in &self.enhancements {
             let mut enhancement = enhancement.borrow_mut();
             enhancement.update(&update_context)?;

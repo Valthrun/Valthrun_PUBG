@@ -81,7 +81,7 @@ pub fn flush_frame_logs() {
         *is_first_flush = false;
     } else {
         // On subsequent flushes, reserve first 3 lines
-        let available_height = height.saturating_sub(30);
+        let available_height = height.saturating_sub(3);
         let start = if frame_buffer.len() > available_height {
             frame_buffer.len() - available_height
         } else {
