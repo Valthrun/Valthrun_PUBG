@@ -43,27 +43,18 @@ impl State for ViewController {
             local_player.rotation[2].to_radians()
         );
 
-        // Create rotation matrices for each axis
-        let rotation_x = nalgebra::Matrix3::new(
-            1.0, 0.0, 0.0,
-            0.0, pitch.cos(), -pitch.sin(),
-            0.0, pitch.sin(), pitch.cos()
-        );
-        
-        let rotation_y = nalgebra::Matrix3::new(
-            yaw.cos(), 0.0, yaw.sin(),
-            0.0, 1.0, 0.0,
-            -yaw.sin(), 0.0, yaw.cos()
-        );
-        
-        let rotation_z = nalgebra::Matrix3::new(
-            roll.cos(), -roll.sin(), 0.0,
-            roll.sin(), roll.cos(), 0.0,
-            0.0, 0.0, 1.0
-        );
+        let sp = pitch.sin();
+        let cp = pitch.cos();
+        let sy = yaw.sin();
+        let cy = yaw.cos();
+        let sr = roll.sin();
+        let cr = roll.cos();
 
-        // Combine rotations (order matters - adjust if needed)
-        let rotation = rotation_z * rotation_y * rotation_x;
+        let rotation = nalgebra::Matrix3::new(
+            cp * cy,               cp * sy,               sp,
+            sr * sp * cy - cr * sy, sr * sp * sy + cr * cy, -sr * cp,
+            -(cr * sp * cy + sr * sy), -(cr * sp * sy - sr * cy), cr * cp
+        );
 
         let view_matrix = nalgebra::Matrix4::new(
             rotation[(0, 0)], rotation[(0, 1)], rotation[(0, 2)], 0.0,
@@ -78,6 +69,7 @@ impl State for ViewController {
             local_player.location[2],
         );
         self.camera_fov = local_player.fov_angle;
+
         self.vaxisx = nalgebra::Vector3::new(
             view_matrix[(0, 0)],
             view_matrix[(0, 1)],

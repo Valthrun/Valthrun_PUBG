@@ -94,30 +94,6 @@ impl Enhancement for PlayerSpyer {
                 continue;
             }
 
-            let difference = [
-                player_info.position[0] - local_player_info.location[0],
-                player_info.position[1] - local_player_info.location[1],
-                player_info.position[2] - local_player_info.location[2],
-            ];
-
-            // Calculate horizontal angle to target (atan2 gives us angle in radians)
-            let target_angle = difference[1].atan2(difference[0]);
-
-            // Get player's horizontal angle (z rotation)
-            let player_angle = local_player_info.rotation[1].to_radians();
-
-            // Calculate the difference and convert to degrees
-            let angle_diff = (target_angle - player_angle).to_degrees();
-
-            // Normalize angle to -180 to 180 degrees
-            let angle_diff = if angle_diff > 180.0 {
-                (angle_diff - 360.0) as i32
-            } else if angle_diff < -180.0 {
-                (angle_diff + 360.0) as i32
-            } else {
-                angle_diff as i32
-            };
-
             players_data.push((player_info.clone(), distance, team_id));
         }
 
@@ -135,20 +111,6 @@ impl Enhancement for PlayerSpyer {
         // TODO: Find a better way
         players_data.dedup_by(|a, b| a.1 == b.1);
 
-        /*let mut count = players_data.len();
-        if count > 25 {
-            count = 25;
-        }
-
-        for i in 0..count {
-            log::info!(
-                "Distance: {} Health: {} Angle: {}",
-                players_data[i].0,
-                players_data[i].1,
-                players_data[i].2
-            );
-        }*/
-
         let players_data = players_data.iter().map(|x| x.0.clone()).collect();
 
         self.players_data = players_data;
@@ -163,11 +125,11 @@ impl Enhancement for PlayerSpyer {
         }
 
         let view_controller = _states.resolve::<ViewController>(())?;
+        let local_player_info = _states.resolve::<StateLocalPlayerInfo>(())?;
 
         let draw_list = _ui.get_window_draw_list();
 
         for player_info in &self.players_data {
-            // Convert world position to screen coordinates
             let player_pos = Vector3::new(player_info.position[0], player_info.position[1], player_info.position[2]);
             
             let screen_pos = match view_controller.world_to_screen(&player_pos, false) {
@@ -175,20 +137,26 @@ impl Enhancement for PlayerSpyer {
                 None => continue,
             };
 
-            log::info!("Screen position: {:?}", screen_pos);
+            let base_width = 40.0;
+            let base_height = 80.0;
+            
+            let distance = ((player_info.position[0] - local_player_info.location[0]).powi(2)
+                + (player_info.position[1] - local_player_info.location[1]).powi(2)
+                + (player_info.position[2] - local_player_info.location[2]).powi(2))
+            .sqrt();
 
-            // Draw box around player
-            let box_width = 40.0;
-            let box_height = 80.0;
+            let scale = 3000.0 / distance.max(100.0);
+            let box_width = base_width * scale;
+            let box_height = base_height * scale;
+            
             let x = screen_pos.x - box_width / 2.0;
             let y = screen_pos.y - box_height / 2.0;
 
-            // Draw red box with alpha based on health
-            let alpha = (player_info.health as f32 / 100.0 * 255.0) as u8;
+            // Draw red box
             draw_list.add_rect(
                 [x, y],
                 [x + box_width, y + box_height],
-                imgui::ImColor32::from_rgba(255, 0, 0, alpha)
+                imgui::ImColor32::from_rgba(255, 0, 0, 255)
             ).build();
 
             // Draw health text
