@@ -1,5 +1,4 @@
 use std::mem::transmute;
-use std::collections::HashMap;
 
 use anyhow::{
     anyhow,
@@ -121,24 +120,53 @@ impl StateDecrypt {
         let result = (self.xenuine_decrypt_fn)(self.decrypt_key, a);
         result
     }
+}
 
-    #[inline]
-    pub fn decrypt_c_index(value: u32) -> u32 {
-        let rotated = (value ^ 0x33E4D753).rotate_left(0x07);
-        rotated ^ (rotated << 0x10) ^ 0xFE4C1A1E
+pub struct StateGNameCache {
+    cache: Vec<Option<String>>,
+}
+
+impl State for StateGNameCache {
+    type Parameter = ();
+
+    fn create(_states: &StateRegistry, _param: Self::Parameter) -> anyhow::Result<Self> {
+        Ok(Self {
+            cache: Vec::new(),
+        })
     }
 
-    #[inline]
-    pub fn get_gname_by_id(&self, states: &StateRegistry, id: u32) -> anyhow::Result<String> {
-        let mut gname_cache = states.resolve_mut::<StateGNameCache>(())?;
-        gname_cache.get_or_insert(id, || unsafe {
+    fn cache_type() -> StateCacheType {
+        StateCacheType::Persistent
+    }
+}
+
+impl StateGNameCache {
+    pub fn new() -> Self {
+        Self {
+            cache: Vec::new(),
+        }
+    }
+
+    pub fn get_gname_by_id(&mut self, states: &StateRegistry, id: u32) -> anyhow::Result<String> {
+        // First check if we already have the name cached
+        if (id as usize) < self.cache.len() {
+            if let Some(Some(name)) = self.cache.get(id as usize) {
+                return Ok(name.clone());
+            }
+        }
+
+        // If not cached, resolve all the states we need first
+        let decrypt = states.resolve::<StateDecrypt>(())?;
+        let pubg_handle = states.resolve::<StatePubgHandle>(())?;
+        let memory = states.resolve::<StatePubgMemory>(())?;
+        
+        // Get the name
+        let name = unsafe {
             let id = Self::decrypt_c_index(id);
-            let pubg_handle = states.resolve::<StatePubgHandle>(())?;
-            let memory = states.resolve::<StatePubgMemory>(())?;
-            let g_names_address = self.decrypt(
+            let g_names_address = decrypt.decrypt(
                 u64::read_object(
                     memory.view(),
-                    self.decrypt(
+                    decrypt.decrypt(
                         u64::read_object(
                             memory.view(),
                             pubg_handle.memory_address(Module::Game, G_NAMES_OFFSET)?,
@@ -158,45 +186,21 @@ impl StateDecrypt {
 
             f_name
                 .read_string(memory.view(), 0x10)?
-                .context("f_name nullptr")
-        })
-    }
-}
+                .context("f_name nullptr")?
+        };
 
-pub struct StateGNameCache {
-    cache: HashMap<u32, String>,
-}
-
-impl State for StateGNameCache {
-    type Parameter = ();
-
-    fn create(_states: &StateRegistry, _param: Self::Parameter) -> anyhow::Result<Self> {
-        Ok(Self {
-            cache: HashMap::new(),
-        })
-    }
-
-    fn cache_type() -> StateCacheType {
-        StateCacheType::Persistent
-    }
-}
-
-impl StateGNameCache {
-    pub fn new() -> Self {
-        Self {
-            cache: HashMap::new(),
+        // Update our own cache directly since we have &mut self
+        if (id as usize) >= self.cache.len() {
+            self.cache.resize(id as usize + 1, None);
         }
-    }
-
-    pub fn get_or_insert<F>(&mut self, id: u32, f: F) -> anyhow::Result<String> 
-    where
-        F: FnOnce() -> anyhow::Result<String>
-    {
-        if let Some(name) = self.cache.get(&id) {
-            return Ok(name.clone());
-        }
-        let name = f()?;
-        self.cache.insert(id, name.clone());
+        self.cache[id as usize] = Some(name.clone());
+        
         Ok(name)
+    }
+
+    #[inline]
+    fn decrypt_c_index(value: u32) -> u32 {
+        let rotated = (value ^ 0x33E4D753).rotate_left(0x07);
+        rotated ^ (rotated << 0x10) ^ 0xFE4C1A1E
     }
 }

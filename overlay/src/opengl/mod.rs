@@ -79,9 +79,8 @@ impl OpenGLRenderBackend {
             .expect("Failed to make OpenGL context current");
 
         Ok(Self {
-            surface: surface,
+            surface,
             context,
-
             imgui_renderer: None,
         })
     }
@@ -101,9 +100,15 @@ impl RenderBackend for OpenGLRenderBackend {
         _window: &Window,
         draw_data: &imgui::DrawData,
     ) {
+        /*if draw_data.draw_lists_count() == 0 {
+            return;
+        }*/
+
         if let Some(renderer) = &mut self.imgui_renderer {
             unsafe { renderer.gl_context().clear(glow::COLOR_BUFFER_BIT) };
-            renderer.render(draw_data).unwrap();
+            if let Err(e) = renderer.render(draw_data) {
+                log::error!("Failed to render frame: {}", e);
+            }
         }
 
         self.surface.swap_buffers(&self.context).unwrap();
@@ -114,12 +119,11 @@ impl RenderBackend for OpenGLRenderBackend {
     }
 
     fn initialize(&mut self) -> Result<()> {
-        // Any additional initialization if needed
         Ok(())
     }
 
     fn cleanup(&mut self) {
-        // Clean up OpenGL resources if needed
+        self.imgui_renderer = None;
     }
 }
 

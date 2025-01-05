@@ -19,7 +19,7 @@ fn main() {
 fn real_main() -> anyhow::Result<()> {
     let (overlay, app) = app::initialize_app()?;
 
-    //let mut update_fail_count = 0;
+    let mut update_fail_count = 0;
     let mut update_timeout: Option<(Instant, Duration)> = None;
 
     overlay.main_loop(
@@ -48,17 +48,17 @@ fn real_main() -> anyhow::Result<()> {
             }
 
             if let Err(err) = app.update(ui) {
-                log::error!("Update error occurred: {:#}", err);
-                /*if update_fail_count >= 10 {
+                if update_fail_count >= 10 {
                     log::error!("Over 10 errors occurred. Waiting 1s and try again.");
                     log::error!("Last error: {:#}", err);
+                    log::error!("Stack trace:\n{:?}", err.backtrace());
 
                     update_timeout = Some((Instant::now(), Duration::from_millis(1000)));
                     update_fail_count = 0;
                     return true;
                 } else {
                     update_fail_count += 1;
-                }*/
+                }
             }
 
             app.render(ui, unicode_text);

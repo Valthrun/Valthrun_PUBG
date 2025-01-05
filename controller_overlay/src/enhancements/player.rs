@@ -4,7 +4,7 @@ use nalgebra::Vector3;
 use overlay::UnicodeTextRenderer;
 use pubg::schema::ACharacter;
 use pubg::state::{StatePlayerInfo, StateLocalPlayerInfo, StatePlayerInfoParams, StateActorList};
-use pubg::{StateDecrypt, StatePubgMemory};
+use pubg::{StateDecrypt, StateGNameCache, StatePubgMemory};
 use utils_state::StateRegistry;
 
 use crate::{
@@ -42,6 +42,7 @@ impl Enhancement for PlayerSpyer {
         let memory = context.states.resolve::<StatePubgMemory>(())?;
         let actor_array = context.states.resolve::<StateActorList>(())?;
         let decrypt = context.states.resolve::<StateDecrypt>(())?;
+        let mut gname_cache = context.states.resolve_mut::<StateGNameCache>(())?;
         let local_player_info = context.states.resolve::<StateLocalPlayerInfo>(())?;
         let actor_count = actor_array.count()?;
 
@@ -59,7 +60,7 @@ impl Enhancement for PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = decrypt.get_gname_by_id(&context.states, actor.id()?)?;
+            let name = gname_cache.get_gname_by_id(&context.states, actor.id()?)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;

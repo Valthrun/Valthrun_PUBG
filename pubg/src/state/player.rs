@@ -64,12 +64,15 @@ impl StatePlayerInfo {
     const HEALTH4: u32 = 0xA48;
 
     pub fn decrypt_player_health(value: &mut [u8], offset: u32) {
-        let xor_keys = unsafe {
-            std::slice::from_raw_parts((&Self::HEALTH_XOR_KEYS as *const u32) as *const u8, 64)
-        };
+        let xor_keys_bytes: [u8; 64] = Self::HEALTH_XOR_KEYS.iter()
+            .flat_map(|&x| x.to_le_bytes())
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap();
+
         let size = value.len() as u32;
         for i in 0..size as usize {
-            value[i] ^= xor_keys[(i as u32 + offset) as usize & 0x3F];
+            value[i] ^= xor_keys_bytes[(i as u32 + offset) as usize & 0x3F];
         }
     }
 
