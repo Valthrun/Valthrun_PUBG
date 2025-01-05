@@ -1,36 +1,19 @@
+use anyhow::Result;
+use imgui::Ui;
 use overlay::UnicodeTextRenderer;
 use utils_state::StateRegistry;
 
 use crate::{
+    app::types::UpdateContext,
     settings::AppSettings,
-    app::core::UpdateContext,
 };
-
-pub trait Enhancement {
-    fn update(&mut self, ctx: &UpdateContext) -> anyhow::Result<()>;
-    fn update_settings(
-        &mut self,
-        _ui: &imgui::Ui,
-        _settings: &mut AppSettings,
-    ) -> anyhow::Result<bool> {
-        Ok(false)
-    }
-
-    fn render(
-        &self,
-        states: &StateRegistry,
-        ui: &imgui::Ui,
-        unicode_text: &UnicodeTextRenderer,
-    ) -> anyhow::Result<()>;
-    fn render_debug_window(
-        &mut self,
-        _states: &StateRegistry,
-        _ui: &imgui::Ui,
-        _unicode_text: &UnicodeTextRenderer,
-    ) -> anyhow::Result<()> {
-        Ok(())
-    }
-}
 
 mod player;
 pub use player::*;
+
+pub trait Enhancement {
+    fn update_settings(&mut self, ui: &Ui, settings: &mut AppSettings) -> Result<bool>;
+    fn update(&mut self, context: &UpdateContext) -> Result<()>;
+    fn render(&self, states: &StateRegistry, ui: &Ui, unicode_text: &UnicodeTextRenderer) -> Result<()>;
+    fn render_debug_window(&mut self, states: &StateRegistry, ui: &Ui, unicode_text: &UnicodeTextRenderer) -> Result<()>;
+}

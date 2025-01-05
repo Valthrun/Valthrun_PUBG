@@ -117,7 +117,7 @@ impl PubgHandle {
             .list_processes()?
             .into_iter()
             .filter(|process| {
-                process.get_image_base_name().unwrap_or_default() == obfstr!("Notepad.exe")
+                process.get_image_base_name().unwrap_or_default() == obfstr!("TslGame.exe")
             })
             .collect::<Vec<_>>();
         let process = if process.is_empty() {

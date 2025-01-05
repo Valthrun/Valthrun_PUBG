@@ -1,10 +1,5 @@
 use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
+    cell::{Ref, RefMut},
 };
 
 use imgui::Condition;
@@ -13,38 +8,14 @@ use overlay::{
     SystemRuntimeController, 
     UnicodeTextRenderer,
 };
-use pubg::PubgHandle;
-use utils_state::StateRegistry;
 use winit::window::Window;
 
 use crate::{
-    enhancements::Enhancement,
-    settings::{save_app_settings, AppSettings, SettingsUI},
+    settings::{save_app_settings, AppSettings},
     view::ViewController,
 };
 
-use super::fonts::AppFonts;
-
-pub struct UpdateContext<'a> {
-    pub states: &'a StateRegistry,
-}
-
-pub struct Application {
-    pub fonts: AppFonts,
-    pub states: StateRegistry,
-
-    pub pubg: Arc<PubgHandle>,
-    pub enhancements: Vec<Rc<RefCell<dyn Enhancement>>>,
-
-    pub settings_visible: bool,
-    pub settings_dirty: bool,
-    pub settings_ui: RefCell<SettingsUI>,
-    pub settings_screen_capture_changed: AtomicBool,
-    pub settings_monitor_changed: AtomicBool,
-    pub settings_render_debug_window_changed: AtomicBool,
-
-    pub frame_read_calls: usize,
-}
+use super::types::{Application, UpdateContext};
 
 impl Application {
     pub fn settings(&self) -> Ref<'_, AppSettings> {
@@ -64,8 +35,8 @@ impl Application {
         controller: &mut SystemRuntimeController,
         overlay_window: &Window,
     ) -> anyhow::Result<()> {
-        if self.settings_dirty {
-            self.settings_dirty = false;
+        if self.settings_manager.is_dirty() {
+            self.settings_manager.set_dirty(false);
             let mut settings = self.settings_mut();
 
             settings.imgui = None;
@@ -82,16 +53,13 @@ impl Application {
             };
         }
 
-        if self.settings_monitor_changed.swap(false, Ordering::Relaxed) {
+        if self.settings_manager.monitor_changed() {
             let settings = self.settings();
             overlay::System::switch_monitor(&overlay_window, settings.selected_monitor);
             log::debug!("Updating monitor to {}", settings.selected_monitor);
         }
 
-        if self
-            .settings_screen_capture_changed
-            .swap(false, Ordering::Relaxed)
-        {
+        if self.settings_manager.screen_capture_changed() {
             let settings = self.settings();
             controller.toggle_screen_capture_visibility(!settings.hide_overlay_from_screen_capture);
             log::debug!(
@@ -100,10 +68,7 @@ impl Application {
             );
         }
 
-        if self
-            .settings_render_debug_window_changed
-            .swap(false, Ordering::Relaxed)
-        {
+        if self.settings_manager.render_debug_window_changed() {
             let settings = self.settings();
             controller.toggle_debug_overlay(settings.render_debug_window);
         }
@@ -116,23 +81,18 @@ impl Application {
             for enhancement in self.enhancements.iter() {
                 let mut hack = enhancement.borrow_mut();
                 if hack.update_settings(ui, &mut *self.settings_mut())? {
-                    self.settings_dirty = true;
+                    self.settings_manager.set_dirty(true);
                 }
             }
         }
 
         if ui.is_key_pressed_no_repeat(self.settings().key_settings.0) {
-            log::debug!("Toogle settings");
-            self.settings_visible = !self.settings_visible;
+            log::debug!("Toggle settings");
+            self.settings_manager.toggle_visible();
             self.pubg.add_metrics_record(
                 "settings-toggled",
-                &format!("visible: {}", self.settings_visible),
+                &format!("visible: {}", self.settings_manager.is_visible()),
             );
-
-            if !self.settings_visible {
-                /* overlay has just been closed */
-                self.settings_dirty = true;
-            }
         }
 
         self.states.invalidate_states();
@@ -173,10 +133,7 @@ impl Application {
             }
         }
 
-        if self.settings_visible {
-            let mut settings_ui = self.settings_ui.borrow_mut();
-            settings_ui.render(self, ui, unicode_text)
-        }
+        self.settings_manager.render(self, ui, unicode_text);
     }
 
     fn render_overlay(&self, ui: &imgui::Ui, unicode_text: &UnicodeTextRenderer) {

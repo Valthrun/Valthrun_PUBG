@@ -39,7 +39,7 @@ use crate::{
         ImGuiKey,
         ImguiComboEnum,
     },
-    app::core::Application,
+    app::types::Application,
 };
 
 enum EspPlayerActiveHeader {
@@ -172,11 +172,11 @@ impl SettingsUI {
                         ui.checkbox(obfstr!("Valthrun_PUBG Watermark"), &mut settings.valthrun_watermark);
 
                         if ui.checkbox(obfstr!("Hide overlay from screen capture"), &mut settings.hide_overlay_from_screen_capture) {
-                            app.settings_screen_capture_changed.store(true, Ordering::Relaxed);
+                            app.settings_manager.mark_screen_capture_changed();
                         }
 
                         if ui.checkbox(obfstr!("Show render debug overlay"), &mut settings.render_debug_window) {
-                            app.settings_render_debug_window_changed.store(true, Ordering::Relaxed);
+                            app.settings_manager.mark_render_debug_window_changed();
                         }
                     }
 
@@ -909,7 +909,7 @@ impl SettingsUI {
                     .collect::<Vec<_>>(),
             ) {
                 settings.selected_monitor = selected as i32;
-                app.settings_monitor_changed.store(true, Ordering::Relaxed);
+                app.settings_manager.mark_monitor_changed();
             }
         } else {
             ui.text_colored([1.0, 0.0, 0.0, 1.0], "No display detected!");

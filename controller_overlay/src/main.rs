@@ -17,7 +17,7 @@ fn main() {
 }
 
 fn real_main() -> anyhow::Result<()> {
-    let (overlay, app) = app::init::initialize_app()?;
+    let (overlay, app) = app::initialize_app()?;
 
     //let mut update_fail_count = 0;
     let mut update_timeout: Option<(Instant, Duration)> = None;

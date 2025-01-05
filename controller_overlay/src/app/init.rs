@@ -1,7 +1,6 @@
 use std::{
     rc::Rc,
     cell::RefCell,
-    sync::atomic::AtomicBool,
     error::Error,
 };
 
@@ -15,12 +14,12 @@ use utils_state::StateRegistry;
 use utils_windows::version_info;
 
 use crate::{
-    settings::{load_app_settings, SettingsUI},
+    settings::load_app_settings,
     enhancements::PlayerSpyer,
     app::fonts::AppFonts,
 };
 
-use super::core::Application;
+use super::{types::Application, settings_manager::SettingsManager};
 
 pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     env_logger::Builder::from_default_env()
@@ -102,12 +101,7 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
         states,
         pubg: pubg.clone(),
         enhancements: vec![Rc::new(RefCell::new(PlayerSpyer {}))],
-        settings_visible: false,
-        settings_dirty: false,
-        settings_ui: RefCell::new(SettingsUI::new()),
-        settings_screen_capture_changed: AtomicBool::new(true),
-        settings_monitor_changed: AtomicBool::new(true),
-        settings_render_debug_window_changed: AtomicBool::new(true),
+        settings_manager: SettingsManager::new(),
         frame_read_calls: 0,
     };
 
