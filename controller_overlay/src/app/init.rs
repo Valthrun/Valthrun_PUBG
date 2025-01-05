@@ -1,9 +1,10 @@
 use std::{
     rc::Rc,
     cell::RefCell,
-    sync::{atomic::AtomicBool},
+    sync::atomic::AtomicBool,
     error::Error,
 };
+
 use anyhow::Context;
 use obfstr::obfstr;
 use overlay::{OverlayOptions, OverlayError, VulkanError, LoadingError, System};
@@ -16,13 +17,10 @@ use utils_windows::version_info;
 use crate::{
     settings::{load_app_settings, SettingsUI},
     enhancements::PlayerSpyer,
+    app::fonts::AppFonts,
 };
 
-use super::{
-    core::Application,
-    fonts::AppFonts,
-    state::{LocalPubgHandle, LocalPubgMemory},
-};
+use super::core::Application;
 
 pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     env_logger::Builder::from_default_env()
@@ -61,8 +59,8 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     pubg.add_metrics_record(obfstr!("Valthrun_PUBG-status"), "initializing");
 
     let mut states = StateRegistry::new(1024 * 8);
-    states.set(LocalPubgHandle::from(StatePubgHandle::new(pubg.clone())), ())?;
-    states.set(LocalPubgMemory::from(StatePubgMemory::new(pubg.create_memory_view())), ())?;
+    states.set(StatePubgHandle::new(pubg.clone()), ())?;
+    states.set(StatePubgMemory::new(pubg.create_memory_view()), ())?;
     states.set(settings, ())?;
 
     log::debug!("Initialize overlay");

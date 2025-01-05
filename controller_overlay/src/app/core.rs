@@ -20,9 +20,7 @@ use winit::window::Window;
 use crate::{
     enhancements::Enhancement,
     settings::{save_app_settings, AppSettings, SettingsUI},
-    app::
-        state::LocalViewController
-    ,
+    view::ViewController,
 };
 
 use super::fonts::AppFonts;
@@ -138,7 +136,7 @@ impl Application {
         }
 
         self.states.invalidate_states();
-        if let Ok(mut view_controller) = self.states.resolve_mut::<LocalViewController>(()) {
+        if let Ok(mut view_controller) = self.states.resolve_mut::<ViewController>(()) {
             view_controller.update_screen_bounds(mint::Vector2::from_slice(&ui.io().display_size));
         }
 
