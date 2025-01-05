@@ -16,7 +16,7 @@ use crate::{
 use super::Enhancement;
 
 pub struct PlayerSpyer {
-    players_data: Vec<(u32, u32, i32, u32)>,
+    players_data: Vec<StatePlayerInfo>,
 }
 
 impl Default for PlayerSpyer {
@@ -45,9 +45,8 @@ impl Enhancement for PlayerSpyer {
         let local_player_info = context.states.resolve::<StateLocalPlayerInfo>(())?;
         let actor_count = actor_array.count()?;
 
-        let mut players_data: Vec<(u32, u32, i32, u32)> = Vec::new();
+        let mut players_data: Vec<(StatePlayerInfo, u32, u32)> = Vec::new();
         
-        log::info!("Start");
         for actor_ptr in actor_array
             .data()?
             .elements(memory.view(), 0..actor_count as usize)?
@@ -61,8 +60,6 @@ impl Enhancement for PlayerSpyer {
                 .context("actor nullptr")?;
 
             let name = decrypt.get_gname_by_id(&context.states, actor.id()?)?;
-
-            log::info!("Actor");
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;
@@ -121,24 +118,24 @@ impl Enhancement for PlayerSpyer {
                 angle_diff as i32
             };
 
-            players_data.push((distance, player_info.health, angle_diff, team_id));
+            players_data.push((player_info.clone(), distance, team_id));
         }
 
         if players_data.is_empty() {
             return Ok(());
         }
 
-        //players_data.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        players_data.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
         // TODO: Try to find current team from local player and filter out teamaters during the loop
-        //let first_team = players_data[0].3;
-        //players_data.retain(|x| x.3 != first_team);
+        let first_team = players_data[0].2;
+        players_data.retain(|x| x.2 != first_team);
 
         // Hack: Filter some of the fog of war entries
         // TODO: Find a better way
-        //players_data.dedup_by(|a, b| a.0 == b.0);
+        players_data.dedup_by(|a, b| a.1 == b.1);
 
-        let mut count = players_data.len();
+        /*let mut count = players_data.len();
         if count > 25 {
             count = 25;
         }
@@ -150,7 +147,9 @@ impl Enhancement for PlayerSpyer {
                 players_data[i].1,
                 players_data[i].2
             );
-        }
+        }*/
+
+        let players_data = players_data.iter().map(|x| x.0.clone()).collect();
 
         self.players_data = players_data;
 
@@ -158,25 +157,25 @@ impl Enhancement for PlayerSpyer {
     }
 
     fn render(&self, _states: &StateRegistry, _ui: &Ui, _unicode_text: &UnicodeTextRenderer) -> Result<()> {
-        /* 
-
         // Skip if no players found
         if self.players_data.is_empty() {
             return Ok(());
         }
 
         let view_controller = _states.resolve::<ViewController>(())?;
-        let local_player_info = _states.resolve::<StateLocalPlayerInfo>(())?;
 
-        let draw_list = _ui.get_background_draw_list();
+        let draw_list = _ui.get_window_draw_list();
 
-        for (_distance, health, _angle, _team_id) in &self.players_data {
+        for player_info in &self.players_data {
             // Convert world position to screen coordinates
-            let player_pos = Vector3::new(local_player_info.location[0], local_player_info.location[1], local_player_info.location[2]);
+            let player_pos = Vector3::new(player_info.position[0], player_info.position[1], player_info.position[2]);
+            
             let screen_pos = match view_controller.world_to_screen(&player_pos, false) {
                 Some(screen_pos) => screen_pos,
                 None => continue,
             };
+
+            log::info!("Screen position: {:?}", screen_pos);
 
             // Draw box around player
             let box_width = 40.0;
@@ -185,21 +184,21 @@ impl Enhancement for PlayerSpyer {
             let y = screen_pos.y - box_height / 2.0;
 
             // Draw red box with alpha based on health
-            let alpha = (*health as f32 / 100.0 * 255.0) as u8;
+            let alpha = (player_info.health as f32 / 100.0 * 255.0) as u8;
             draw_list.add_rect(
                 [x, y],
                 [x + box_width, y + box_height],
                 imgui::ImColor32::from_rgba(255, 0, 0, alpha)
-            );
+            ).build();
 
             // Draw health text
             draw_list.add_text(
                 [x, y - 20.0],
                 imgui::ImColor32::from_rgba(255, 255, 255, 255),
-                &format!("HP: {}", health)
+                &format!("HP: {}", player_info.health)
             );
         }
-        */
+
         Ok(())
     }
 

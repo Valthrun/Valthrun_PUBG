@@ -1,4 +1,5 @@
 use std::mem::transmute;
+use std::collections::HashMap;
 
 use anyhow::{
     anyhow,
@@ -129,7 +130,8 @@ impl StateDecrypt {
 
     #[inline]
     pub fn get_gname_by_id(&self, states: &StateRegistry, id: u32) -> anyhow::Result<String> {
-        unsafe {
+        let mut gname_cache = states.resolve_mut::<StateGNameCache>(())?;
+        gname_cache.get_or_insert(id, || unsafe {
             let id = Self::decrypt_c_index(id);
             let pubg_handle = states.resolve::<StatePubgHandle>(())?;
             let memory = states.resolve::<StatePubgMemory>(())?;
@@ -157,6 +159,44 @@ impl StateDecrypt {
             f_name
                 .read_string(memory.view(), 0x10)?
                 .context("f_name nullptr")
+        })
+    }
+}
+
+pub struct StateGNameCache {
+    cache: HashMap<u32, String>,
+}
+
+impl State for StateGNameCache {
+    type Parameter = ();
+
+    fn create(_states: &StateRegistry, _param: Self::Parameter) -> anyhow::Result<Self> {
+        Ok(Self {
+            cache: HashMap::new(),
+        })
+    }
+
+    fn cache_type() -> StateCacheType {
+        StateCacheType::Persistent
+    }
+}
+
+impl StateGNameCache {
+    pub fn new() -> Self {
+        Self {
+            cache: HashMap::new(),
         }
+    }
+
+    pub fn get_or_insert<F>(&mut self, id: u32, f: F) -> anyhow::Result<String> 
+    where
+        F: FnOnce() -> anyhow::Result<String>
+    {
+        if let Some(name) = self.cache.get(&id) {
+            return Ok(name.clone());
+        }
+        let name = f()?;
+        self.cache.insert(id, name.clone());
+        Ok(name)
     }
 }
