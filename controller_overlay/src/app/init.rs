@@ -100,9 +100,10 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
         fonts: app_fonts,
         states,
         pubg: pubg.clone(),
-        enhancements: vec![Rc::new(RefCell::new(PlayerSpyer {}))],
+        enhancements: vec![Rc::new(RefCell::new(PlayerSpyer::new()))],
         settings_manager: SettingsManager::new(),
         frame_read_calls: 0,
+        last_total_read_calls: 0,
     };
 
     {

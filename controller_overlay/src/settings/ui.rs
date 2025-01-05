@@ -1,6 +1,5 @@
 use std::{
     collections::btree_map::Entry,
-    sync::atomic::Ordering,
     time::Instant,
 };
 

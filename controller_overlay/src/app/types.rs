@@ -22,4 +22,5 @@ pub struct Application {
     pub enhancements: Vec<Rc<RefCell<dyn Enhancement>>>,
     pub settings_manager: SettingsManager,
     pub frame_read_calls: usize,
+    pub last_total_read_calls: usize,
 } 

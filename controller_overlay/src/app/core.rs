@@ -110,8 +110,8 @@ impl Application {
         }
 
         let read_calls = self.pubg.ke_interface.total_read_calls();
-        self.frame_read_calls = read_calls;
-
+        self.frame_read_calls = read_calls - self.last_total_read_calls;
+        self.last_total_read_calls = read_calls;
         Ok(())
     }
 

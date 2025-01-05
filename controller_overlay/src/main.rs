@@ -47,7 +47,8 @@ fn real_main() -> anyhow::Result<()> {
                 }
             }
 
-            if let Err(_) = app.update(ui) {
+            if let Err(err) = app.update(ui) {
+                log::error!("Update error occurred: {:#}", err);
                 /*if update_fail_count >= 10 {
                     log::error!("Over 10 errors occurred. Waiting 1s and try again.");
                     log::error!("Last error: {:#}", err);

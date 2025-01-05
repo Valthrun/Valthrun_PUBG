@@ -35,24 +35,41 @@ impl State for ViewController {
 
     fn update(&mut self, states: &StateRegistry) -> anyhow::Result<()> {
         let local_player = states.resolve::<StateLocalPlayerInfo>(())?;
-        let rotation = nalgebra::Matrix3::from_row_slice(&local_player.rotation);
+
+        // Convert Euler angles to rotation matrix
+        let (pitch, yaw, roll) = (
+            local_player.rotation[0].to_radians(),
+            local_player.rotation[1].to_radians(),
+            local_player.rotation[2].to_radians()
+        );
+
+        // Create rotation matrices for each axis
+        let rotation_x = nalgebra::Matrix3::new(
+            1.0, 0.0, 0.0,
+            0.0, pitch.cos(), -pitch.sin(),
+            0.0, pitch.sin(), pitch.cos()
+        );
+        
+        let rotation_y = nalgebra::Matrix3::new(
+            yaw.cos(), 0.0, yaw.sin(),
+            0.0, 1.0, 0.0,
+            -yaw.sin(), 0.0, yaw.cos()
+        );
+        
+        let rotation_z = nalgebra::Matrix3::new(
+            roll.cos(), -roll.sin(), 0.0,
+            roll.sin(), roll.cos(), 0.0,
+            0.0, 0.0, 1.0
+        );
+
+        // Combine rotations (order matters - adjust if needed)
+        let rotation = rotation_z * rotation_y * rotation_x;
+
         let view_matrix = nalgebra::Matrix4::new(
-            rotation[(0, 0)],
-            rotation[(0, 1)],
-            rotation[(0, 2)],
-            0.0,
-            rotation[(1, 0)],
-            rotation[(1, 1)],
-            rotation[(1, 2)],
-            0.0,
-            rotation[(2, 0)],
-            rotation[(2, 1)],
-            rotation[(2, 2)],
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
+            rotation[(0, 0)], rotation[(0, 1)], rotation[(0, 2)], 0.0,
+            rotation[(1, 0)], rotation[(1, 1)], rotation[(1, 2)], 0.0,
+            rotation[(2, 0)], rotation[(2, 1)], rotation[(2, 2)], 0.0,
+            0.0, 0.0, 0.0, 1.0,
         );
 
         self.camera_position = nalgebra::Vector3::new(
