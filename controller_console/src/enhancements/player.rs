@@ -4,7 +4,7 @@ use pubg::{
     decrypt::StateGNameCache,
     schema::ACharacter,
     state::{
-        StateActorList,
+        StateActorLists,
         StateLocalPlayerInfo,
         StatePlayerInfo,
         StatePlayerInfoParams,
@@ -19,9 +19,8 @@ pub struct PlayerSpyer {}
 impl Enhancement for PlayerSpyer {
     fn update(&mut self, ctx: &crate::UpdateContext) -> anyhow::Result<()> {
         let memory = ctx.states.resolve::<StatePubgMemory>(())?;
-        let actor_array = ctx.states.resolve::<StateActorList>(())?;
+        let actor_array = ctx.states.resolve::<StateActorLists>(())?;
         let decrypt = ctx.states.resolve::<StateDecrypt>(())?;
-        let mut gname_cache = ctx.states.resolve_mut::<StateGNameCache>(())?;
         let local_player_info = ctx.states.resolve::<StateLocalPlayerInfo>(())?;
         let actor_count = actor_array.count()?;
 
@@ -39,7 +38,7 @@ impl Enhancement for PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = gname_cache.get_gname_by_id(&ctx.states, actor.id()?)?;
+            let name = decrypt.get_gname_by_id(&ctx.states, actor.id()?)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;

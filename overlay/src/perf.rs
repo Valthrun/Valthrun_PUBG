@@ -1,4 +1,5 @@
 use std::time::Instant;
+use std::collections::HashMap;
 
 use imgui::{
     ImColor32,
@@ -20,6 +21,10 @@ pub struct PerfTracker {
     marker_step_begin: Instant,
 
     initial_perf: bool,
+
+    // New fields for accumulating times
+    current_frame_times: HashMap<&'static str, f32>,
+    marker_order: Vec<&'static str>,
 }
 
 impl PerfTracker {
@@ -45,6 +50,9 @@ impl PerfTracker {
             marker_step_begin: Instant::now(),
 
             initial_perf: true,
+
+            current_frame_times: HashMap::new(),
+            marker_order: Vec::new(),
         }
     }
 
@@ -52,31 +60,43 @@ impl PerfTracker {
         self.marker_begin = Instant::now();
         self.marker_step_begin = Instant::now();
         self.marker_index = 0;
+        self.current_frame_times.clear();
+        self.marker_order.clear();
 
         self.buffer_index += 1;
         self.buffer_index %= self.history_length;
     }
 
     pub fn mark(&mut self, label: &'static str) {
-        if self.initial_perf {
-            self.marker_names.push(label);
-            self.markers
-                .push(Self::allocate_fixed_buffer(self.history_length))
-        } else {
-            assert_eq!(self.marker_names.get(self.marker_index), Some(&label));
-        }
-
         let elapsed = self.marker_step_begin.elapsed();
         self.marker_step_begin = Instant::now();
 
-        self.markers[self.marker_index][self.buffer_index] = elapsed.as_micros() as f32 / 1000.0;
-        self.marker_index += 1;
+        let elapsed_ms = elapsed.as_micros() as f32 / 1000.0;
+        *self.current_frame_times.entry(label).or_insert(0.0) += elapsed_ms;
+
+        if !self.marker_order.contains(&label) {
+            self.marker_order.push(label);
+        }
     }
 
     pub fn finish(&mut self, label: &'static str) {
         self.mark(label);
-        self.marker_total[self.buffer_index] =
-            self.marker_begin.elapsed().as_micros() as f32 / 1000.0;
+
+        // If this is the first frame, initialize the markers
+        if self.initial_perf {
+            self.marker_names = self.marker_order.clone();
+            for _ in 0..self.marker_order.len() {
+                self.markers.push(Self::allocate_fixed_buffer(self.history_length));
+            }
+        }
+
+        // Store accumulated times in the history buffers
+        for (i, &name) in self.marker_names.iter().enumerate() {
+            let time = self.current_frame_times.get(name).copied().unwrap_or(0.0);
+            self.markers[i][self.buffer_index] = time;
+        }
+
+        self.marker_total[self.buffer_index] = self.marker_begin.elapsed().as_micros() as f32 / 1000.0;
         self.initial_perf = false;
         self.finished_buffer_index = self.buffer_index;
     }
