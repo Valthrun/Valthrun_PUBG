@@ -6,7 +6,6 @@ use core::{
     },
 };
 use std::{
-    backtrace::Backtrace,
     collections::HashMap,
     env,
     error::Error,
@@ -15,6 +14,7 @@ use std::{
     sync::Mutex,
 };
 
+use backtrace::Backtrace;
 use libloading::Library;
 use obfstr::obfstr;
 use valthrun_driver_protocol::{
@@ -287,15 +287,37 @@ impl DriverInterface {
         &self,
         process_id: ProcessId,
         directory_table_type: DirectoryTableType,
-
         address: u64,
         buffer: &mut [T],
     ) -> IResult<()> {
         self.read_calls.fetch_add(1, Ordering::Relaxed);
 
-        let backtrace = Backtrace::capture();
-        let backtrace_str = format!("{:?}", backtrace);
+        // Capture and format simplified backtrace
+        let bt = Backtrace::new();
+        let frames: Vec<_> = bt.frames()
+            .iter()
+            .filter_map(|frame| {
+                frame.symbols().first().and_then(|sym| {
+                    sym.name().map(|name| {
+                        let name = name.to_string();
+                        if !name.contains("backtrace") && 
+                           !name.contains("std::sys") &&
+                           !name.contains("std::rt") &&
+                           !name.contains("std::panicking") &&
+                           !name.contains("__rust_begin_short_backtrace") {
+                            Some(name)
+                        } else {
+                            None
+                        }
+                    }).flatten()
+                })
+            })
+            .take(10)
+            .collect();
 
+        let backtrace_str = frames.join(" -> ");
+
+        // Update statistics
         if let Ok(mut stats) = self.read_slice_stats.lock() {
             *stats.entry(backtrace_str).or_insert(0) += 1;
         }

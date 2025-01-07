@@ -17,6 +17,7 @@ log = { workspace = true }
 thiserror = "1.0.44"
 libloading = "0.8.5"
 obfstr.workspace = true
+backtrace = "0.3"
 
 [dev-dependencies]
 anyhow = { workspace = true }

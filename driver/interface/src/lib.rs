@@ -1,3 +1,4 @@
+#![feature(backtrace_frames)]
 #![feature(string_from_utf8_lossy_owned)]
 
 mod interface;
