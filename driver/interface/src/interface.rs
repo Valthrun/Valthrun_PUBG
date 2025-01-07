@@ -312,7 +312,7 @@ impl DriverInterface {
                     }).flatten()
                 })
             })
-            .take(10)
+            .take_while(|name| !name.contains("real_main"))
             .collect();
 
         let backtrace_str = frames.join(" -> ");
@@ -350,13 +350,14 @@ impl DriverInterface {
         }
     }
 
-    pub fn get_read_slice_stats(&self) -> HashMap<String, usize> {
-        let stats = self.read_slice_stats.lock()
-            .map(|stats| stats.clone())
-            .unwrap_or_default();
-
+    pub fn clear_read_slice_stats(&self) {
         self.read_slice_stats.lock().unwrap().clear();
-        stats
+    }
+
+    pub fn get_read_slice_stats(&self) -> HashMap<String, usize> {
+        self.read_slice_stats.lock()
+            .map(|stats| stats.clone())
+            .unwrap_or_default()
     }
 
     #[must_use]

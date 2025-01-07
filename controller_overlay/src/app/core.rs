@@ -109,10 +109,20 @@ impl Application {
             enhancement.update(&update_context)?;
         }
 
-        let read_call_stats = self.pubg.ke_interface.get_read_slice_stats();
-        for (key, value) in read_call_stats {
-            log::info!("{}: {}", key, value);
+        if ui.is_key_pressed(imgui::Key::P) {
+            let read_call_stats = self.pubg.ke_interface.get_read_slice_stats();
+            let stats_content = read_call_stats.iter()
+                .map(|(key, value)| format!("{}: {}", key, value))
+                .collect::<Vec<String>>()
+                .join("\n\n");
+            if let Err(e) = std::fs::write("read_call_stats.txt", stats_content) {
+                log::error!("Failed to write stats to file: {}", e);
+            } else {
+                log::info!("Read call stats saved to read_call_stats.txt");
+            }
         }
+
+        self.pubg.ke_interface.clear_read_slice_stats();
 
         let read_calls = self.pubg.ke_interface.total_read_calls();
         self.frame_read_calls = read_calls - self.last_total_read_calls;
