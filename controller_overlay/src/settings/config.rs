@@ -1,7 +1,5 @@
 use std::{
-    collections::
-        BTreeMap
-    ,
+    collections::BTreeMap,
     fs::File,
     io::{
         BufReader,
@@ -20,6 +18,7 @@ use utils_state::{
     State,
     StateCacheType,
 };
+
 use super::{
     Color,
     EspConfig,

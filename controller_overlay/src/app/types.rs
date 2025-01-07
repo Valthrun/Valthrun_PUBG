@@ -7,9 +7,11 @@ use std::{
 use pubg::PubgHandle;
 use utils_state::StateRegistry;
 
+use super::{
+    fonts::AppFonts,
+    settings_manager::SettingsManager,
+};
 use crate::enhancements::Enhancement;
-
-use super::{fonts::AppFonts, settings_manager::SettingsManager};
 
 pub struct UpdateContext<'a> {
     pub states: &'a StateRegistry,
@@ -23,4 +25,4 @@ pub struct Application {
     pub settings_manager: SettingsManager,
     pub frame_read_calls: usize,
     pub last_total_read_calls: usize,
-} 
+}

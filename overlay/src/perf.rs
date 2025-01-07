@@ -1,5 +1,7 @@
-use std::time::Instant;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    time::Instant,
+};
 
 use imgui::{
     ImColor32,
@@ -86,7 +88,8 @@ impl PerfTracker {
         if self.initial_perf {
             self.marker_names = self.marker_order.clone();
             for _ in 0..self.marker_order.len() {
-                self.markers.push(Self::allocate_fixed_buffer(self.history_length));
+                self.markers
+                    .push(Self::allocate_fixed_buffer(self.history_length));
             }
         }
 
@@ -96,7 +99,8 @@ impl PerfTracker {
             self.markers[i][self.buffer_index] = time;
         }
 
-        self.marker_total[self.buffer_index] = self.marker_begin.elapsed().as_micros() as f32 / 1000.0;
+        self.marker_total[self.buffer_index] =
+            self.marker_begin.elapsed().as_micros() as f32 / 1000.0;
         self.initial_perf = false;
         self.finished_buffer_index = self.buffer_index;
     }

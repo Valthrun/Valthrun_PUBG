@@ -64,7 +64,8 @@ impl StatePlayerInfo {
     const HEALTH4: u32 = 0xA48;
 
     pub fn decrypt_player_health(value: &mut [u8], offset: u32) {
-        let xor_keys_bytes: [u8; 64] = Self::HEALTH_XOR_KEYS.iter()
+        let xor_keys_bytes: [u8; 64] = Self::HEALTH_XOR_KEYS
+            .iter()
             .flat_map(|&x| x.to_le_bytes())
             .collect::<Vec<u8>>()
             .try_into()

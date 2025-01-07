@@ -1,12 +1,35 @@
-use std::any::{Any, TypeId, type_name};
-use std::cell::{RefCell, Ref, RefMut};
-use std::ops::DerefMut;
-use std::time::Instant;
-use anyhow::{anyhow, Context, Result};
+use std::{
+    any::{
+        type_name,
+        Any,
+        TypeId,
+    },
+    cell::{
+        Ref,
+        RefCell,
+        RefMut,
+    },
+    ops::DerefMut,
+    time::Instant,
+};
 
-use crate::allocator::StateAllocator;
-use crate::ref_utils::{transpose_ref_opt, transpose_ref_mut_opt};
-use crate::state::{State, StateCacheType};
+use anyhow::{
+    anyhow,
+    Context,
+    Result,
+};
+
+use crate::{
+    allocator::StateAllocator,
+    ref_utils::{
+        transpose_ref_mut_opt,
+        transpose_ref_opt,
+    },
+    state::{
+        State,
+        StateCacheType,
+    },
+};
 
 struct InternalState {
     value: Box<dyn Any + Send>,
@@ -202,12 +225,9 @@ impl StateRegistry {
             /* We already borrowed that state, hence it must be initialized & not dirty */
         }
 
-        let value = self.states[index].try_borrow().map_err(|_| {
-            anyhow!(
-                "circular state initialisation for {}",
-                type_name::<T>()
-            )
-        })?;
+        let value = self.states[index]
+            .try_borrow()
+            .map_err(|_| anyhow!("circular state initialisation for {}", type_name::<T>()))?;
 
         let value = Ref::map(value, |value| {
             let value = value.as_ref().expect("to be present");
@@ -215,4 +235,4 @@ impl StateRegistry {
         });
         Ok(value)
     }
-} 
+}

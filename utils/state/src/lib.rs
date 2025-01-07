@@ -7,4 +7,7 @@ mod state;
 mod tests;
 
 pub use registry::StateRegistry;
-pub use state::{State, StateCacheType};
+pub use state::{
+    State,
+    StateCacheType,
+};

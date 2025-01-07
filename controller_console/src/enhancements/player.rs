@@ -1,7 +1,9 @@
 use anyhow::Context;
 use pubg::{
-    decrypt::StateDecrypt,
-    decrypt::StateGNameCache,
+    decrypt::{
+        StateDecrypt,
+        StateGNameCache,
+    },
     schema::ACharacter,
     state::{
         StateActorLists,

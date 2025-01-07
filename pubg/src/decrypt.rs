@@ -1,5 +1,7 @@
-use std::mem::transmute;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    mem::transmute,
+};
 
 use anyhow::{
     anyhow,
@@ -159,12 +161,16 @@ impl StateDecrypt {
                 .map_err(|err| anyhow::anyhow!("{}", err))?,
             );
 
-            let f_name_ptr =
-                u64::read_object(memory.view(), g_names_address + ((decrypted_id as u64) / 0x3FD0) * 8)
-                    .map_err(|err| anyhow::anyhow!("{}", err))? as u64;
-            let f_name =
-                PtrCStr::read_object(memory.view(), f_name_ptr + ((decrypted_id as u64) % 0x3FD0) * 8)
-                    .map_err(|err| anyhow::anyhow!("{}", err))?;
+            let f_name_ptr = u64::read_object(
+                memory.view(),
+                g_names_address + ((decrypted_id as u64) / 0x3FD0) * 8,
+            )
+            .map_err(|err| anyhow::anyhow!("{}", err))? as u64;
+            let f_name = PtrCStr::read_object(
+                memory.view(),
+                f_name_ptr + ((decrypted_id as u64) % 0x3FD0) * 8,
+            )
+            .map_err(|err| anyhow::anyhow!("{}", err))?;
 
             let name = f_name
                 .read_string(memory.view(), 0x10)?

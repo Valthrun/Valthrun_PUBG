@@ -1,7 +1,7 @@
 use imgui::{
+    Io,
     Key,
     MouseButton,
-    Io,
 };
 use imgui_winit_support::winit::window::Window;
 use windows::Win32::{
@@ -39,7 +39,7 @@ const VK_KEY_MAX: usize = 256;
 pub trait KeyboardInput {
     /// Check if a key is currently held down
     fn is_key_down(&self, key: Key) -> bool;
-    
+
     /// Check if a key was just pressed
     /// If repeating is true, will trigger multiple times while held
     fn is_key_pressed(&self, key: Key, repeating: bool) -> bool;
@@ -49,10 +49,10 @@ pub trait KeyboardInput {
 pub trait MouseInput {
     /// Get the current mouse position in screen coordinates
     fn mouse_position(&self) -> [f32; 2];
-    
+
     /// Check if a mouse button is currently held down
     fn is_button_down(&self, button: MouseButton) -> bool;
-    
+
     /// Check if a mouse button was just pressed
     fn is_button_pressed(&self, button: MouseButton) -> bool;
 }
@@ -71,7 +71,7 @@ pub struct MouseInputSystem {
 
 impl MouseInputSystem {
     pub fn new(hwnd: HWND) -> Self {
-        Self { 
+        Self {
             hwnd,
             position: [0.0, 0.0],
         }

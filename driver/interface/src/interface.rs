@@ -293,33 +293,39 @@ impl DriverInterface {
         self.read_calls.fetch_add(1, Ordering::Relaxed);
 
         // Capture and format simplified backtrace
-        let bt = Backtrace::new();
-        let frames: Vec<_> = bt.frames()
-            .iter()
-            .filter_map(|frame| {
-                frame.symbols().first().and_then(|sym| {
-                    sym.name().map(|name| {
-                        let name = name.to_string();
-                        if !name.contains("backtrace") && 
-                           !name.contains("std::sys") &&
-                           !name.contains("std::rt") &&
-                           !name.contains("std::panicking") &&
-                           !name.contains("__rust_begin_short_backtrace") {
-                            Some(name)
-                        } else {
-                            None
-                        }
-                    }).flatten()
+        if env::var("RUST_BACKTRACE").is_ok() {
+            let bt = Backtrace::new();
+            let frames: Vec<_> = bt
+                .frames()
+                .iter()
+                .filter_map(|frame| {
+                    frame.symbols().first().and_then(|sym| {
+                        sym.name()
+                            .map(|name| {
+                                let name = name.to_string();
+                                if !name.contains("backtrace")
+                                    && !name.contains("std::sys")
+                                    && !name.contains("std::rt")
+                                    && !name.contains("std::panicking")
+                                    && !name.contains("__rust_begin_short_backtrace")
+                                {
+                                    Some(name)
+                                } else {
+                                    None
+                                }
+                            })
+                            .flatten()
+                    })
                 })
-            })
-            .take_while(|name| !name.contains("real_main"))
-            .collect();
+                .take_while(|name| !name.contains("real_main"))
+                .collect();
 
-        let backtrace_str = frames.join(" -> ");
+            let backtrace_str = frames.join(" ->\n");
 
-        // Update statistics
-        if let Ok(mut stats) = self.read_slice_stats.lock() {
-            *stats.entry(backtrace_str).or_insert(0) += 1;
+            // Update statistics
+            if let Ok(mut stats) = self.read_slice_stats.lock() {
+                *stats.entry(backtrace_str).or_insert(0) += 1;
+            }
         }
 
         let mut command = DriverCommandMemoryRead::default();
@@ -355,7 +361,8 @@ impl DriverInterface {
     }
 
     pub fn get_read_slice_stats(&self) -> HashMap<String, usize> {
-        self.read_slice_stats.lock()
+        self.read_slice_stats
+            .lock()
             .map(|stats| stats.clone())
             .unwrap_or_default()
     }

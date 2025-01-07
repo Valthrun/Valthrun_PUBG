@@ -1,6 +1,9 @@
 use std::{
     cell::RefCell,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{
+        AtomicBool,
+        Ordering,
+    },
 };
 
 use crate::settings::SettingsUI;
@@ -62,7 +65,8 @@ impl SettingsManager {
     }
 
     pub fn render_debug_window_changed(&self) -> bool {
-        self.render_debug_window_changed.swap(false, Ordering::Relaxed)
+        self.render_debug_window_changed
+            .swap(false, Ordering::Relaxed)
     }
 
     pub fn mark_screen_capture_changed(&self) {
@@ -74,13 +78,19 @@ impl SettingsManager {
     }
 
     pub fn mark_render_debug_window_changed(&self) {
-        self.render_debug_window_changed.store(true, Ordering::Relaxed);
+        self.render_debug_window_changed
+            .store(true, Ordering::Relaxed);
     }
 
-    pub fn render(&self, app: &crate::app::Application, ui: &imgui::Ui, unicode_text: &overlay::UnicodeTextRenderer) {
+    pub fn render(
+        &self,
+        app: &crate::app::Application,
+        ui: &imgui::Ui,
+        unicode_text: &overlay::UnicodeTextRenderer,
+    ) {
         if self.visible {
             let mut settings_ui = self.ui.borrow_mut();
             settings_ui.render(app, ui, unicode_text)
         }
     }
-} 
+}

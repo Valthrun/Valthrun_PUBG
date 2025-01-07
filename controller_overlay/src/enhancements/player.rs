@@ -1,22 +1,37 @@
-use anyhow::{Context, Result};
+use anyhow::{
+    Context,
+    Result,
+};
 use imgui::Ui;
 use nalgebra::Vector3;
 use overlay::UnicodeTextRenderer;
-use pubg::schema::ACharacter;
-use pubg::state::{StatePlayerInfo, StateLocalPlayerInfo, StatePlayerInfoParams, StateActorList};
-use pubg::{StateDecrypt, StateGNameCache, StatePubgMemory};
+use pubg::{
+    schema::{
+        AActor,
+        ACharacter,
+    },
+    state::{
+        StateActorLists,
+        StateLocalPlayerInfo,
+        StatePlayerInfo,
+        StatePlayerInfoParams,
+    },
+    StateDecrypt,
+    StateGNameCache,
+    StatePubgMemory,
+};
+use raw_struct::builtins::Ptr64;
 use utils_state::StateRegistry;
 
+use super::Enhancement;
 use crate::{
     app::types::UpdateContext,
     settings::AppSettings,
     view::ViewController,
 };
 
-use super::Enhancement;
-
 pub struct PlayerSpyer {
-    players_data: Vec<StatePlayerInfo>,
+    players_info: Vec<StatePlayerInfo>,
 }
 
 impl Default for PlayerSpyer {
@@ -28,29 +43,21 @@ impl Default for PlayerSpyer {
 impl PlayerSpyer {
     pub fn new() -> Self {
         Self {
-            players_data: Vec::new(),
+            players_info: Vec::new(),
         }
     }
-}
 
-impl Enhancement for PlayerSpyer {
-    fn update_settings(&mut self, _ui: &Ui, _settings: &mut AppSettings) -> Result<bool> {
-        Ok(false)
-    }
+    pub fn collect_players_info(
+        &self,
+        states: &StateRegistry,
+        actor_list: &Vec<(u64, Ptr64<dyn AActor>)>,
+        players_data: &mut Vec<(StatePlayerInfo, u32, u32)>,
+    ) -> anyhow::Result<()> {
+        let decrypt = states.resolve::<StateDecrypt>(())?;
+        let memory = states.resolve::<StatePubgMemory>(())?;
+        let local_player_info = states.resolve::<StateLocalPlayerInfo>(())?;
 
-    fn update(&mut self, context: &UpdateContext) -> Result<()> {
-        let memory = context.states.resolve::<StatePubgMemory>(())?;
-        let actor_array = context.states.resolve::<StateActorList>(())?;
-        let decrypt = context.states.resolve::<StateDecrypt>(())?;
-        let local_player_info = context.states.resolve::<StateLocalPlayerInfo>(())?;
-        let actor_count = actor_array.count()?;
-
-        let mut players_data: Vec<(StatePlayerInfo, u32, u32)> = Vec::new();
-        
-        for actor_ptr in actor_array
-            .data()?
-            .elements(memory.view(), 0..actor_count as usize)?
-        {
+        for (_actor_address, actor_ptr) in actor_list.iter() {
             if actor_ptr.is_null() {
                 continue;
             }
@@ -59,7 +66,7 @@ impl Enhancement for PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = decrypt.get_gname_by_id(&context.states, actor.id()?)?;
+            let name = decrypt.get_gname_by_id(&states, actor.id()?)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;
@@ -78,12 +85,10 @@ impl Enhancement for PlayerSpyer {
             let character = actor.cast::<dyn ACharacter>();
             let team_id = character.team()?;
 
-            let player_info = context
-                .states
-                .resolve::<StatePlayerInfo>(StatePlayerInfoParams {
-                    character,
-                    root_component,
-                })?;
+            let player_info = states.resolve::<StatePlayerInfo>(StatePlayerInfoParams {
+                character,
+                root_component,
+            })?;
 
             let distance = ((player_info.position[0] - local_player_info.location[0]).powi(2)
                 + (player_info.position[1] - local_player_info.location[1]).powi(2)
@@ -96,6 +101,31 @@ impl Enhancement for PlayerSpyer {
 
             players_data.push((player_info.clone(), distance, team_id));
         }
+        Ok(())
+    }
+}
+
+impl Enhancement for PlayerSpyer {
+    fn update_settings(&mut self, _ui: &Ui, _settings: &mut AppSettings) -> Result<bool> {
+        Ok(false)
+    }
+
+    fn update(&mut self, context: &UpdateContext) -> Result<()> {
+        let actor_lists = context.states.resolve::<StateActorLists>(())?;
+
+        let mut players_data: Vec<(StatePlayerInfo, u32, u32)> = Vec::new();
+
+        let actor_list = match actor_lists.get_cached_actors(717966208) {
+            Some(actor_list) => actor_list,
+            None => return Err(anyhow::anyhow!("Failed to get actor list")),
+        };
+        self.collect_players_info(&context.states, actor_list, &mut players_data)?;
+
+        let actor_list = match actor_lists.get_cached_actors(751521152) {
+            Some(actor_list) => actor_list,
+            None => return Err(anyhow::anyhow!("Failed to get actor list")),
+        };
+        self.collect_players_info(&context.states, actor_list, &mut players_data)?;
 
         if players_data.is_empty() {
             return Ok(());
@@ -111,16 +141,19 @@ impl Enhancement for PlayerSpyer {
         // TODO: Find a better way
         players_data.dedup_by(|a, b| a.1 == b.1);
 
-        let players_data = players_data.iter().map(|x| x.0.clone()).collect();
-
-        self.players_data = players_data;
+        self.players_info = players_data.iter().map(|x| x.0.clone()).collect();
 
         Ok(())
     }
 
-    fn render(&self, _states: &StateRegistry, _ui: &Ui, _unicode_text: &UnicodeTextRenderer) -> Result<()> {
+    fn render(
+        &self,
+        _states: &StateRegistry,
+        _ui: &Ui,
+        _unicode_text: &UnicodeTextRenderer,
+    ) -> Result<()> {
         // Skip if no players found
-        if self.players_data.is_empty() {
+        if self.players_info.is_empty() {
             return Ok(());
         }
 
@@ -129,9 +162,13 @@ impl Enhancement for PlayerSpyer {
 
         let draw_list = _ui.get_window_draw_list();
 
-        for player_info in &self.players_data {
-            let player_pos = Vector3::new(player_info.position[0], player_info.position[1], player_info.position[2]);
-            
+        for player_info in &self.players_info {
+            let player_pos = Vector3::new(
+                player_info.position[0],
+                player_info.position[1],
+                player_info.position[2],
+            );
+
             let screen_pos = match view_controller.world_to_screen(&player_pos, false) {
                 Some(screen_pos) => screen_pos,
                 None => continue,
@@ -139,7 +176,7 @@ impl Enhancement for PlayerSpyer {
 
             let base_width = 40.0;
             let base_height = 80.0;
-            
+
             let distance = ((player_info.position[0] - local_player_info.location[0]).powi(2)
                 + (player_info.position[1] - local_player_info.location[1]).powi(2)
                 + (player_info.position[2] - local_player_info.location[2]).powi(2))
@@ -148,29 +185,36 @@ impl Enhancement for PlayerSpyer {
             let scale = 3000.0 / distance.max(100.0);
             let box_width = base_width * scale;
             let box_height = base_height * scale;
-            
+
             let x = screen_pos.x - box_width / 2.0;
             let y = screen_pos.y - box_height / 2.0;
 
             // Draw red box
-            draw_list.add_rect(
-                [x, y],
-                [x + box_width, y + box_height],
-                imgui::ImColor32::from_rgba(255, 0, 0, 255)
-            ).build();
+            draw_list
+                .add_rect(
+                    [x, y],
+                    [x + box_width, y + box_height],
+                    imgui::ImColor32::from_rgba(255, 0, 0, 255),
+                )
+                .build();
 
             // Draw health text
             draw_list.add_text(
                 [x, y - 20.0],
                 imgui::ImColor32::from_rgba(255, 255, 255, 255),
-                &format!("HP: {}", player_info.health)
+                &format!("HP: {}", player_info.health),
             );
         }
 
         Ok(())
     }
 
-    fn render_debug_window(&mut self, _states: &StateRegistry, _ui: &Ui, _unicode_text: &UnicodeTextRenderer) -> Result<()> {
+    fn render_debug_window(
+        &mut self,
+        _states: &StateRegistry,
+        _ui: &Ui,
+        _unicode_text: &UnicodeTextRenderer,
+    ) -> Result<()> {
         Ok(())
     }
 }

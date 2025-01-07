@@ -1,6 +1,7 @@
-use std::
-    time::{Duration, Instant}
-;
+use std::time::{
+    Duration,
+    Instant,
+};
 
 use utils_console;
 

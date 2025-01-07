@@ -26,6 +26,7 @@ use super::{
     KeyToggleMode,
 };
 use crate::{
+    app::types::Application,
     settings::{
         AppSettings,
         EspBoxType,
@@ -38,7 +39,6 @@ use crate::{
         ImGuiKey,
         ImguiComboEnum,
     },
-    app::types::Application,
 };
 
 enum EspPlayerActiveHeader {

@@ -1,21 +1,27 @@
-use std::{
-    cell::{Ref, RefMut},
+use std::cell::{
+    Ref,
+    RefMut,
 };
 
 use imgui::Condition;
 use obfstr::obfstr;
 use overlay::{
-    SystemRuntimeController, 
+    SystemRuntimeController,
     UnicodeTextRenderer,
 };
 use winit::window::Window;
 
+use super::types::{
+    Application,
+    UpdateContext,
+};
 use crate::{
-    settings::{save_app_settings, AppSettings},
+    settings::{
+        save_app_settings,
+        AppSettings,
+    },
     view::ViewController,
 };
-
-use super::types::{Application, UpdateContext};
 
 impl Application {
     pub fn settings(&self) -> Ref<'_, AppSettings> {
@@ -111,7 +117,8 @@ impl Application {
 
         if ui.is_key_pressed(imgui::Key::P) {
             let read_call_stats = self.pubg.ke_interface.get_read_slice_stats();
-            let stats_content = read_call_stats.iter()
+            let stats_content = read_call_stats
+                .iter()
                 .map(|(key, value)| format!("{}: {}", key, value))
                 .collect::<Vec<String>>()
                 .join("\n\n");
@@ -190,4 +197,4 @@ impl Application {
             }
         }
     }
-} 
+}

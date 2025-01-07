@@ -3,7 +3,11 @@ use std::{
     sync::Arc,
 };
 
-use imgui::{FontConfig, FontId, FontSource};
+use imgui::{
+    FontConfig,
+    FontId,
+    FontSource,
+};
 
 /// A reference to a font that can be safely shared and modified across threads.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -53,4 +57,4 @@ impl AppFonts {
             app_fonts.valthrun.set_id(valthrun_font);
         })
     }
-} 
+}

@@ -1,6 +1,9 @@
-use std::any::Any;
-use std::hash::Hash;
-use std::time::Duration;
+use std::{
+    any::Any,
+    hash::Hash,
+    time::Duration,
+};
+
 use anyhow::Result;
 
 use crate::StateRegistry;
@@ -36,4 +39,4 @@ pub trait State: Any + Sized + Send {
     fn update(&mut self, _states: &StateRegistry) -> Result<()> {
         Ok(())
     }
-} 
+}

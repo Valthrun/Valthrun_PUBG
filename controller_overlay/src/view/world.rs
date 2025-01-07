@@ -40,7 +40,7 @@ impl State for ViewController {
         let (pitch, yaw, roll) = (
             local_player.rotation[0].to_radians(),
             local_player.rotation[1].to_radians(),
-            local_player.rotation[2].to_radians()
+            local_player.rotation[2].to_radians(),
         );
 
         let sp = pitch.sin();
@@ -51,16 +51,34 @@ impl State for ViewController {
         let cr = roll.cos();
 
         let rotation = nalgebra::Matrix3::new(
-            cp * cy,               cp * sy,               sp,
-            sr * sp * cy - cr * sy, sr * sp * sy + cr * cy, -sr * cp,
-            -(cr * sp * cy + sr * sy), -(cr * sp * sy - sr * cy), cr * cp
+            cp * cy,
+            cp * sy,
+            sp,
+            sr * sp * cy - cr * sy,
+            sr * sp * sy + cr * cy,
+            -sr * cp,
+            -(cr * sp * cy + sr * sy),
+            -(cr * sp * sy - sr * cy),
+            cr * cp,
         );
 
         let view_matrix = nalgebra::Matrix4::new(
-            rotation[(0, 0)], rotation[(0, 1)], rotation[(0, 2)], 0.0,
-            rotation[(1, 0)], rotation[(1, 1)], rotation[(1, 2)], 0.0,
-            rotation[(2, 0)], rotation[(2, 1)], rotation[(2, 2)], 0.0,
-            0.0, 0.0, 0.0, 1.0,
+            rotation[(0, 0)],
+            rotation[(0, 1)],
+            rotation[(0, 2)],
+            0.0,
+            rotation[(1, 0)],
+            rotation[(1, 1)],
+            rotation[(1, 2)],
+            0.0,
+            rotation[(2, 0)],
+            rotation[(2, 1)],
+            rotation[(2, 2)],
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
         );
 
         self.camera_position = nalgebra::Vector3::new(

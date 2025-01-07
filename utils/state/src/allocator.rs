@@ -1,6 +1,12 @@
-use std::any::TypeId;
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher, DefaultHasher};
+use std::{
+    any::TypeId,
+    collections::HashMap,
+    hash::{
+        DefaultHasher,
+        Hash,
+        Hasher,
+    },
+};
 
 pub(crate) struct StateAllocator {
     index_lookup: HashMap<(TypeId, u64), usize>,
@@ -53,4 +59,4 @@ impl StateAllocator {
         };
         self.free_list.push(index);
     }
-} 
+}

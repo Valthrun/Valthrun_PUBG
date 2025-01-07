@@ -1,25 +1,41 @@
 use std::{
-    rc::Rc,
     cell::RefCell,
     error::Error,
+    rc::Rc,
 };
 
 use anyhow::Context;
 use obfstr::obfstr;
-use overlay::{OverlayOptions, OverlayError, VulkanError, LoadingError, System};
-use pubg::{PubgHandle, InterfaceError, StatePubgHandle, StatePubgMemory};
-use rand::{thread_rng, RngCore};
+use overlay::{
+    LoadingError,
+    OverlayError,
+    OverlayOptions,
+    System,
+    VulkanError,
+};
+use pubg::{
+    InterfaceError,
+    PubgHandle,
+    StatePubgHandle,
+    StatePubgMemory,
+};
+use rand::{
+    thread_rng,
+    RngCore,
+};
 use utils_console;
 use utils_state::StateRegistry;
 use utils_windows::version_info;
 
-use crate::{
-    settings::load_app_settings,
-    enhancements::PlayerSpyer,
-    app::fonts::AppFonts,
+use super::{
+    settings_manager::SettingsManager,
+    types::Application,
 };
-
-use super::{types::Application, settings_manager::SettingsManager};
+use crate::{
+    app::fonts::AppFonts,
+    enhancements::PlayerSpyer,
+    settings::load_app_settings,
+};
 
 pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     env_logger::Builder::from_default_env()
@@ -128,4 +144,4 @@ pub fn initialize_app() -> anyhow::Result<(System, Rc<RefCell<Application>>)> {
     log::info!("App initialized.");
 
     Ok((overlay, app))
-} 
+}

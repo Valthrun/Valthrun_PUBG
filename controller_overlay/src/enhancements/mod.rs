@@ -14,6 +14,16 @@ pub use player::*;
 pub trait Enhancement {
     fn update_settings(&mut self, ui: &Ui, settings: &mut AppSettings) -> Result<bool>;
     fn update(&mut self, context: &UpdateContext) -> Result<()>;
-    fn render(&self, states: &StateRegistry, ui: &Ui, unicode_text: &UnicodeTextRenderer) -> Result<()>;
-    fn render_debug_window(&mut self, states: &StateRegistry, ui: &Ui, unicode_text: &UnicodeTextRenderer) -> Result<()>;
+    fn render(
+        &self,
+        states: &StateRegistry,
+        ui: &Ui,
+        unicode_text: &UnicodeTextRenderer,
+    ) -> Result<()>;
+    fn render_debug_window(
+        &mut self,
+        states: &StateRegistry,
+        ui: &Ui,
+        unicode_text: &UnicodeTextRenderer,
+    ) -> Result<()>;
 }

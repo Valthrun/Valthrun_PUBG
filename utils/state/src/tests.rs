@@ -1,4 +1,8 @@
-use crate::{State, StateCacheType, StateRegistry};
+use crate::{
+    State,
+    StateCacheType,
+    StateRegistry,
+};
 
 struct StateA;
 impl State for StateA {
@@ -73,4 +77,4 @@ fn test_expire() {
     assert!(states.resolve::<StateB>(()).is_ok());
     assert!(states.get::<StateA>(()).is_some());
     assert!(states.get::<StateB>(()).is_some());
-} 
+}
