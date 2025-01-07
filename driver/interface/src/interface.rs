@@ -6,10 +6,13 @@ use core::{
     },
 };
 use std::{
+    backtrace::Backtrace,
+    collections::HashMap,
     env,
     error::Error,
     fs,
     path::PathBuf,
+    sync::Mutex,
 };
 
 use libloading::Library;
@@ -61,6 +64,7 @@ pub struct DriverInterface {
     driver_features: DriverFeature,
 
     read_calls: AtomicUsize,
+    read_slice_stats: Mutex<HashMap<String, usize>>,
 }
 
 impl DriverInterface {
@@ -152,6 +156,7 @@ impl DriverInterface {
             driver_features: DriverFeature::empty(),
 
             read_calls: AtomicUsize::new(0),
+            read_slice_stats: Mutex::new(HashMap::new()),
         };
         interface.initialize()?;
         Ok(interface)
@@ -288,6 +293,13 @@ impl DriverInterface {
     ) -> IResult<()> {
         self.read_calls.fetch_add(1, Ordering::Relaxed);
 
+        let backtrace = Backtrace::capture();
+        let backtrace_str = format!("{:?}", backtrace);
+
+        if let Ok(mut stats) = self.read_slice_stats.lock() {
+            *stats.entry(backtrace_str).or_insert(0) += 1;
+        }
+
         let mut command = DriverCommandMemoryRead::default();
         command.process_id = process_id;
         command.directory_table_type = directory_table_type;
@@ -314,6 +326,15 @@ impl DriverInterface {
                 Err(InterfaceError::MemoryAccessPagedOut)
             }
         }
+    }
+
+    pub fn get_read_slice_stats(&self) -> HashMap<String, usize> {
+        let stats = self.read_slice_stats.lock()
+            .map(|stats| stats.clone())
+            .unwrap_or_default();
+
+        self.read_slice_stats.lock().unwrap().clear();
+        stats
     }
 
     #[must_use]

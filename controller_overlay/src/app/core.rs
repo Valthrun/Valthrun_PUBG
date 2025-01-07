@@ -109,6 +109,11 @@ impl Application {
             enhancement.update(&update_context)?;
         }
 
+        let read_call_stats = self.pubg.ke_interface.get_read_slice_stats();
+        for (key, value) in read_call_stats {
+            log::info!("{}: {}", key, value);
+        }
+
         let read_calls = self.pubg.ke_interface.total_read_calls();
         self.frame_read_calls = read_calls - self.last_total_read_calls;
         self.last_total_read_calls = read_calls;
