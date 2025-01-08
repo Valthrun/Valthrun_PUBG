@@ -12,12 +12,12 @@ use pubg::{
     },
     state::{
         StateActorLists,
+        StateDecrypt,
+        StateGNameCache,
         StateLocalPlayerInfo,
         StatePlayerInfo,
         StatePlayerInfoParams,
     },
-    StateDecrypt,
-    StateGNameCache,
     StatePubgMemory,
 };
 use raw_struct::builtins::Ptr64;
@@ -54,6 +54,7 @@ impl PlayerSpyer {
         players_data: &mut Vec<(StatePlayerInfo, u32, u32)>,
     ) -> anyhow::Result<()> {
         let decrypt = states.resolve::<StateDecrypt>(())?;
+        let gname_cache = states.resolve::<StateGNameCache>(())?;
         let memory = states.resolve::<StatePubgMemory>(())?;
         let local_player_info = states.resolve::<StateLocalPlayerInfo>(())?;
 
@@ -66,7 +67,7 @@ impl PlayerSpyer {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = decrypt.get_gname_by_id(&states, actor.id()?)?;
+            let name = gname_cache.get_gname_by_id(&states, actor.id()?)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;
@@ -115,13 +116,13 @@ impl Enhancement for PlayerSpyer {
 
         let mut players_data: Vec<(StatePlayerInfo, u32, u32)> = Vec::new();
 
-        let actor_list = match actor_lists.get_cached_actors(717966208) {
+        let actor_list = match actor_lists.get_cached_actors(147548544) {
             Some(actor_list) => actor_list,
             None => return Err(anyhow::anyhow!("Failed to get actor list")),
         };
         self.collect_players_info(&context.states, actor_list, &mut players_data)?;
 
-        let actor_list = match actor_lists.get_cached_actors(751521152) {
+        let actor_list = match actor_lists.get_cached_actors(181103488) {
             Some(actor_list) => actor_list,
             None => return Err(anyhow::anyhow!("Failed to get actor list")),
         };

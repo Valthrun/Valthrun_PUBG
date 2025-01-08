@@ -1,15 +1,12 @@
-use std::{
-    collections::{
-        HashMap,
-        HashSet,
-    },
-    ops::Deref,
+use std::collections::{
+    HashMap,
+    HashSet,
 };
 
 use anyhow::Context;
 use raw_struct::{
     builtins::Ptr64,
-    Copy,
+    Reference,
 };
 use utils_state::{
     State,
@@ -18,27 +15,27 @@ use utils_state::{
 };
 
 use crate::{
-    decrypt::StateDecrypt,
     schema::{
         AActor,
         TArray,
     },
-    state::StateWorld,
+    state::{
+        StateDecrypt,
+        StateWorld,
+    },
     StatePubgMemory,
 };
 
-const CACHED_ACTOR_IDS: [u32; 2] = [717966208, 751521152];
+const CACHED_ACTOR_IDS: [u32; 2] = [147548544, 181103488];
 
 #[derive(Default)]
 pub struct ActorCache {
     pub actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>>,
-    pub added_this_frame: Vec<(u32, Ptr64<dyn AActor>)>,
-    pub removed_this_frame: Vec<(u32, Ptr64<dyn AActor>)>,
     tracked_addresses: HashSet<u64>,
 }
 
 pub struct StateActorLists {
-    array: Copy<dyn TArray<Ptr64<dyn AActor>>>,
+    array: Reference<dyn TArray<Ptr64<dyn AActor>>>,
     cache: ActorCache,
 }
 
@@ -59,7 +56,7 @@ impl State for StateActorLists {
         let actor_array = u_level
             .actors()
             .context("actor_array nullptr")?
-            .value_copy(memory.view(), &decrypt)?
+            .value_reference(memory.view_arc(), &decrypt)
             .context("nullptr")?;
 
         Ok(Self {
@@ -91,11 +88,9 @@ impl StateActorLists {
             .map(|&id| (id, Vec::new()))
             .collect();
         let mut current_addresses = HashSet::new();
-        self.cache.added_this_frame.clear();
-        self.cache.removed_this_frame.clear();
 
         // Scan through all actors and collect the ones we want to cache
-        /*for actor_ptr in self
+        for actor_ptr in self
             .array
             .data()?
             .elements(memory.view(), 0..self.array.count()? as usize)?
@@ -112,21 +107,10 @@ impl StateActorLists {
 
             // Skip if we've never seen this actor with our IDs before
             if !self.cache.tracked_addresses.contains(&actor_addr) {
-                let actor_id = actor.id()?;
-
-                // Check if this exact actor was in the previous frame
-                let was_present = self
-                    .cache
-                    .actors
-                    .get(&actor_id)
-                    .map(|actors| actors.iter().any(|(addr, _)| *addr == actor_addr))
-                    .unwrap_or(false);
-
-                if !was_present {
-                    self.cache
-                        .added_this_frame
-                        .push((actor_id, actor_ptr.clone()));
-                }
+                let actor_id = match actor.id() {
+                    Ok(id) => id,
+                    Err(_) => continue,
+                };
 
                 current_actors
                     .entry(actor_id)
@@ -149,23 +133,6 @@ impl StateActorLists {
             }
         }
 
-        // Find removed actors
-        for (actor_id, prev_actors) in &self.cache.actors {
-            let current_actors_for_id = current_actors.get(actor_id);
-
-            for (prev_addr, prev_actor) in prev_actors {
-                let still_exists = current_actors_for_id
-                    .map(|actors| actors.iter().any(|(addr, _)| addr == prev_addr))
-                    .unwrap_or(false);
-
-                if !still_exists {
-                    self.cache
-                        .removed_this_frame
-                        .push((*actor_id, prev_actor.clone()));
-                }
-            }
-        }*/
-
         self.cache.actors = current_actors;
         self.cache.tracked_addresses = current_addresses;
         Ok(())
@@ -179,11 +146,8 @@ impl StateActorLists {
         &self.cache.actors
     }
 
-    pub fn added_this_frame(&self) -> &[(u32, Ptr64<dyn AActor>)] {
-        &self.cache.added_this_frame
-    }
-
-    pub fn removed_this_frame(&self) -> &[(u32, Ptr64<dyn AActor>)] {
-        &self.cache.removed_this_frame
+    pub fn clear(&mut self) {
+        self.cache.actors.clear();
+        self.cache.tracked_addresses.clear();
     }
 }

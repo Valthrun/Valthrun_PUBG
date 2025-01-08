@@ -9,6 +9,7 @@ use overlay::{
     SystemRuntimeController,
     UnicodeTextRenderer,
 };
+use pubg::state::StateActorLists;
 use winit::window::Window;
 
 use super::types::{
@@ -113,6 +114,11 @@ impl Application {
         for enhancement in &self.enhancements {
             let mut enhancement = enhancement.borrow_mut();
             enhancement.update(&update_context)?;
+        }
+
+        if ui.is_key_pressed(imgui::Key::Comma) {
+            log::info!("Clearing actor lists");
+            self.states.resolve_mut::<StateActorLists>(())?.clear();
         }
 
         if ui.is_key_pressed(imgui::Key::P) {
