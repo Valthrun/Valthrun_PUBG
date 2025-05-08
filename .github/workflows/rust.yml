@@ -62,3 +62,39 @@ jobs:
           mkdir -p artifacts
           cp target/release/pubg_controller.exe artifacts/
         shell: bash
+
+  build-controller-linux:
+    name: PUBG_Controller (Linux - Functional Test Build)
+    runs-on: ubuntu-latest
+    needs: [rust-check]
+
+    steps:
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Get package version
+        shell: bash
+        run: |
+          VERSION=$(cargo pkgid --manifest-path controller/Cargo.toml | cut -d# -f2 | cut -d: -f2)
+          echo "Package version: $VERSION"
+          echo "ARTIFACT_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Build
+        run: cargo build --verbose --release --bin pubg_controller
+
+      - name: Archive Build Artifacts
+        run: |
+          mkdir -p artifacts
+          cp target/release/pubg_controller artifacts/
+        shell: bash
