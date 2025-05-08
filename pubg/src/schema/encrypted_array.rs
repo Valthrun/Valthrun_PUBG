@@ -22,11 +22,11 @@ use raw_struct::{
     Viewable,
 };
 
-use crate::decrypt;
+use crate::state::StateDecrypt;
 
 #[allow(clippy::len_without_is_empty)]
 pub trait EncryptedArray<T: ?Sized> {
-    fn start_address(&self, decrypt: &decrypt::StateDecrypt) -> u64;
+    fn start_address(&self, decrypt: &StateDecrypt) -> u64;
 
     fn len(&self) -> Option<usize>;
 }
@@ -36,7 +36,7 @@ impl<T: FromMemoryView> dyn EncryptedArray<T> {
         &self,
         memory: &dyn MemoryView,
         index: usize,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<T, AccessError> {
         let offset = (index * mem::size_of::<T>()) as u64;
         T::read_object(memory, self.start_address(decrypt) + offset).map_err(|err| AccessError {
@@ -53,7 +53,7 @@ impl<T: FromMemoryView> dyn EncryptedArray<T> {
         &self,
         memory: &dyn MemoryView,
         range: Range<usize>,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<Vec<T>, AccessError> {
         let element_count = range.end - range.start;
         let mut result = Vec::with_capacity(element_count);
@@ -88,7 +88,7 @@ impl<T: ?Sized + Viewable<T>> dyn EncryptedArray<T> {
         &self,
         memory: Arc<dyn MemoryView>,
         index: usize,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Reference<T> {
         let offset = (index * T::MEMORY_SIZE) as u64;
         Reference::new(memory, self.start_address(decrypt) + offset)
@@ -98,7 +98,7 @@ impl<T: ?Sized + Viewable<T>> dyn EncryptedArray<T> {
         &self,
         memory: Arc<dyn MemoryView>,
         range: Range<usize>,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Vec<Reference<T>> {
         Vec::from_iter(range.map(|index| {
             Reference::new(
@@ -117,7 +117,7 @@ where
         &self,
         memory: &dyn MemoryView,
         index: usize,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<Copy<T>, AccessError> {
         let offset = (index * T::MEMORY_SIZE) as u64;
         Copy::read_object(memory, self.start_address(decrypt) + offset).map_err(|err| AccessError {
@@ -134,7 +134,7 @@ where
         &self,
         memory: &dyn MemoryView,
         range: Range<usize>,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<Vec<Copy<T>>, AccessError> {
         let element_count = range.end - range.start;
         let mut result = Vec::<T::Memory>::with_capacity(element_count);

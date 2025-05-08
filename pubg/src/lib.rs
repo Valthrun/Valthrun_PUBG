@@ -11,9 +11,6 @@ pub mod schema;
 
 pub mod state;
 
-pub mod decrypt;
-pub use decrypt::*;
-
 mod encrypted_ptr;
 pub use encrypted_ptr::*;
 

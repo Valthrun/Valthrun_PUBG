@@ -5,10 +5,7 @@ use std::{
     mem::transmute,
 };
 
-use anyhow::{
-    anyhow,
-    Context,
-};
+use anyhow::anyhow;
 #[cfg(target_os = "linux")]
 use libc::{
     mmap,
@@ -36,10 +33,6 @@ use windows_sys::Win32::System::Memory::{
 };
 
 use crate::{
-    schema::{
-        CStringUtil,
-        PtrCStr,
-    },
     Module,
     StatePubgHandle,
     StatePubgMemory,
@@ -47,8 +40,7 @@ use crate::{
 
 type XenuineDecrypt = unsafe extern "fastcall" fn(u64, u64) -> u64;
 
-pub const DECRYPT_OFFSET: u64 = 0x0E7ED528;
-pub const G_NAMES_OFFSET: u64 = 0x10466B58;
+pub const DECRYPT_OFFSET: u64 = 0x0EA2DA28;
 
 pub struct StateDecrypt {
     decrypt_key: u64,
@@ -176,40 +168,7 @@ impl StateDecrypt {
 
     #[inline]
     pub fn decrypt_c_index(value: u32) -> u32 {
-        let rotated = (value ^ 0x33E4D753).rotate_left(0x07);
-        rotated ^ (rotated << 0x10) ^ 0xFE4C1A1E
-    }
-
-    #[inline]
-    pub fn get_gname_by_id(&self, states: &StateRegistry, id: u32) -> anyhow::Result<String> {
-        unsafe {
-            let id = Self::decrypt_c_index(id);
-            let pubg_handle = states.resolve::<StatePubgHandle>(())?;
-            let memory = states.resolve::<StatePubgMemory>(())?;
-            let g_names_address = self.decrypt(
-                u64::read_object(
-                    memory.view(),
-                    self.decrypt(
-                        u64::read_object(
-                            memory.view(),
-                            pubg_handle.memory_address(Module::Game, G_NAMES_OFFSET)?,
-                        )
-                        .map_err(|err| anyhow::anyhow!("{}", err))?,
-                    ) + 0x8,
-                )
-                .map_err(|err| anyhow::anyhow!("{}", err))?,
-            );
-
-            let f_name_ptr =
-                u64::read_object(memory.view(), g_names_address + ((id as u64) / 0x3FD0) * 8)
-                    .map_err(|err| anyhow::anyhow!("{}", err))? as u64;
-            let f_name =
-                PtrCStr::read_object(memory.view(), f_name_ptr + ((id as u64) % 0x3FD0) * 8)
-                    .map_err(|err| anyhow::anyhow!("{}", err))?;
-
-            f_name
-                .read_string(memory.view(), 0x10)?
-                .context("f_name nullptr")
-        }
+        let rotated = (value ^ 0x8D8C3BA7).rotate_left(0x07);
+        rotated ^ (rotated << 0x10) ^ 0xB62B3BA7
     }
 }

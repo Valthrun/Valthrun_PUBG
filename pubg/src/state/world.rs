@@ -9,12 +9,12 @@ use utils_state::{
 };
 
 use crate::{
-    decrypt::StateDecrypt,
     schema::{
         Entry,
         UWorld,
         ENTRY_OFFSET,
     },
+    state::StateDecrypt,
     Module,
     StatePubgHandle,
     StatePubgMemory,

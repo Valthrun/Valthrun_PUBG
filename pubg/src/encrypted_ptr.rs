@@ -20,8 +20,8 @@ use raw_struct::{
 };
 
 use crate::{
-    decrypt,
     schema::EncryptedArray,
+    state::StateDecrypt,
 };
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -59,7 +59,7 @@ impl<T: marker::Copy> EncryptedPtr64<T> {
     pub fn read_value(
         &self,
         memory: &dyn MemoryView,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<Option<T>, AccessError> {
         let address = unsafe { decrypt.decrypt(self.address) };
         if address > 0 {
@@ -86,7 +86,7 @@ impl<T: ?Sized + Viewable<T>> EncryptedPtr64<T> {
     pub fn value_reference(
         &self,
         memory: Arc<dyn MemoryView>,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Option<Reference<T>> {
         let address = unsafe { decrypt.decrypt(self.address) };
         if address > 0 {
@@ -101,7 +101,7 @@ impl<T: ?Sized + Viewable<T>> EncryptedPtr64<T> {
     pub fn value_copy(
         &self,
         memory: &dyn MemoryView,
-        decrypt: &decrypt::StateDecrypt,
+        decrypt: &StateDecrypt,
     ) -> Result<Option<Copy<T>>, AccessError> {
         let address = unsafe { decrypt.decrypt(self.address) };
         if address > 0 {
@@ -124,7 +124,7 @@ impl<T: ?Sized + Viewable<T>> EncryptedPtr64<T> {
 }
 
 impl<T> EncryptedArray<T> for EncryptedPtr64<[T]> {
-    fn start_address(&self, decrypt: &decrypt::StateDecrypt) -> u64 {
+    fn start_address(&self, decrypt: &StateDecrypt) -> u64 {
         unsafe { decrypt.decrypt(self.address) }
     }
 
@@ -142,7 +142,7 @@ impl<T> Deref for EncryptedPtr64<[T]> {
 }
 
 impl<T, const N: usize> EncryptedArray<T> for EncryptedPtr64<[T; N]> {
-    fn start_address(&self, decrypt: &decrypt::StateDecrypt) -> u64 {
+    fn start_address(&self, decrypt: &StateDecrypt) -> u64 {
         unsafe { decrypt.decrypt(self.address) }
     }
 
@@ -160,7 +160,7 @@ impl<T, const N: usize> Deref for EncryptedPtr64<[T; N]> {
 }
 
 impl<T: ?Sized> EncryptedArray<T> for EncryptedPtr64<dyn EncryptedArray<T>> {
-    fn start_address(&self, decrypt: &decrypt::StateDecrypt) -> u64 {
+    fn start_address(&self, decrypt: &StateDecrypt) -> u64 {
         unsafe { decrypt.decrypt(self.address) }
     }
 
@@ -178,7 +178,7 @@ impl<T: ?Sized> Deref for EncryptedPtr64<dyn EncryptedArray<T>> {
 }
 
 impl<T: ?Sized, const N: usize> EncryptedArray<T> for EncryptedPtr64<dyn SizedArray<T, N>> {
-    fn start_address(&self, decrypt: &decrypt::StateDecrypt) -> u64 {
+    fn start_address(&self, decrypt: &StateDecrypt) -> u64 {
         unsafe { decrypt.decrypt(self.address) }
     }
 

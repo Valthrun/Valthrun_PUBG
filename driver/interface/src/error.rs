@@ -4,8 +4,8 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum InterfaceError {
     #[error("failed to find any memory driver")]
-    NoDriverFound, 
-    
+    NoDriverFound,
+
     #[error("only zenith driver is supported")]
     NotZenithDriver,
 
