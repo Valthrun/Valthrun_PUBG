@@ -2,6 +2,9 @@
 resolver = "2"
 members = [
     "utils/state",
+    "utils/windows",
+    "utils/linux",
+    "utils/common",
 
     "driver/protocol",
     "driver/interface",

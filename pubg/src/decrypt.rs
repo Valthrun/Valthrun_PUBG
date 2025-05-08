@@ -1,10 +1,23 @@
-use std::mem::transmute;
+#[cfg(target_os = "linux")]
+use std::ptr;
+use std::{
+    io,
+    mem::transmute,
+};
 
 use anyhow::{
     anyhow,
     Context,
 };
-use obfstr::obfstr;
+#[cfg(target_os = "linux")]
+use libc::{
+    mmap,
+    MAP_ANONYMOUS,
+    MAP_PRIVATE,
+    PROT_EXEC,
+    PROT_READ,
+    PROT_WRITE,
+};
 use raw_struct::{
     AccessError,
     AccessMode,
@@ -15,6 +28,7 @@ use utils_state::{
     StateCacheType,
     StateRegistry,
 };
+#[cfg(target_os = "windows")]
 use windows_sys::Win32::System::Memory::{
     VirtualAlloc,
     MEM_COMMIT,
@@ -39,6 +53,53 @@ pub const G_NAMES_OFFSET: u64 = 0x10466B58;
 pub struct StateDecrypt {
     decrypt_key: u64,
     xenuine_decrypt_fn: XenuineDecrypt,
+}
+
+#[cfg(target_os = "linux")]
+fn allocate_executable_memory(size: usize) -> Result<*mut u8, io::Error> {
+    unsafe {
+        let addr = mmap(
+            ptr::null_mut(),
+            size,
+            PROT_READ | PROT_WRITE | PROT_EXEC,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0,
+        );
+
+        if addr == libc::MAP_FAILED {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!(
+                    "Failed to allocate executable memory with mmap: {}",
+                    std::io::Error::last_os_error()
+                ),
+            ));
+        }
+
+        Ok(addr as *mut u8)
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn allocate_executable_memory(size: usize) -> Result<*mut u8, io::Error> {
+    unsafe {
+        let addr = VirtualAlloc(
+            std::ptr::null_mut(),
+            size,
+            MEM_COMMIT,
+            PAGE_EXECUTE_READWRITE,
+        );
+
+        if addr.is_null() {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "Failed to allocate executable memory with VirtualAlloc",
+            ));
+        }
+
+        Ok(addr as *mut u8)
+    }
 }
 
 impl State for StateDecrypt {
@@ -80,25 +141,17 @@ impl State for StateDecrypt {
             code_buff[7] = 0x90;
             code_buff[8] = 0x90;
 
-            let executable_memory = VirtualAlloc(
-                std::ptr::null_mut(),
-                code_buff.len() + 4,
-                MEM_COMMIT,
-                PAGE_EXECUTE_READWRITE,
-            );
+            let executable_memory = match allocate_executable_memory(code_buff.len() + 4) {
+                Ok(mem) => mem,
+                Err(e) => {
+                    return Err(anyhow!(
+                        "Failed to allocate executable memory for XenuineDecrypt function: {}",
+                        e
+                    ));
+                }
+            };
 
-            if executable_memory.is_null() {
-                return Err(anyhow!(obfstr!(
-                    "Failed to allocate executable memory for XenuineDecrypt function"
-                )
-                .to_string()));
-            }
-
-            std::ptr::copy_nonoverlapping(
-                code_buff.as_ptr(),
-                executable_memory as *mut u8,
-                code_buff.len(),
-            );
+            std::ptr::copy_nonoverlapping(code_buff.as_ptr(), executable_memory, code_buff.len());
 
             let xenuine_decrypt_fn = transmute(executable_memory);
 

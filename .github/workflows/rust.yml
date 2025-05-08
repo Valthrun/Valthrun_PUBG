@@ -26,7 +26,7 @@ jobs:
         run: rustup component add rustfmt && cargo fmt --check
 
   build-controller:
-    name: PUBG_Controller
+    name: PUBG_Controller (Windows)
     runs-on: windows-latest
     needs: [rust-check]
 
@@ -64,7 +64,7 @@ jobs:
         shell: bash
 
   build-controller-linux:
-    name: PUBG_Controller (Linux - Functional Test Build)
+    name: PUBG_Controller (Linux)
     runs-on: ubuntu-latest
     needs: [rust-check]
 

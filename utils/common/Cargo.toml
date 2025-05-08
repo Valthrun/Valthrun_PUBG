@@ -1,0 +1,14 @@
+[package]
+name = "utils-common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+log = { workspace = true }
+utils-windows = { path = "../windows", optional = true }
+utils-linux = { path = "../linux", optional = true }
+
+[features]
+windows = ["utils-windows"]
+linux = ["utils-linux"] 

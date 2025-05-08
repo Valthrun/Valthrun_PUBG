@@ -12,7 +12,16 @@ log = { workspace = true }
 serde_json = "1.0.104"
 nalgebra = { workspace = true }
 utils-state = { path = "../utils/state" }
+utils-common = { path = "../utils/common" }
 raw_struct = { workspace = true }
 env_logger = { workspace = true }
 valthrun-driver-interface = { path = "../driver/interface" }
+rand = "0.8"
+libc = "0.2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_System_Memory", "Win32_System_ProcessStatus", "Win32_System_Threading", "Win32_System_Diagnostics", "Win32_System_Diagnostics_Debug"] }
+utils-common = { path = "../utils/common", features = ["windows"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+utils-common = { path = "../utils/common", features = ["linux"] }

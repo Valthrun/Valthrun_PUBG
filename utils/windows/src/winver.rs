@@ -19,8 +19,7 @@ extern "system" {
     fn RtlGetVersion(info: &mut OSVERSIONINFOEX) -> NTSTATUS;
 }
 
-// Calls the Win32 API function RtlGetVersion to get the OS version information:
-// https://msdn.microsoft.com/en-us/library/mt723418(v=vs.85).aspx
+// Calls the Win32 API function RtlGetVersion to get the OS version information
 pub fn version_info() -> Result<OSVERSIONINFOEX> {
     let mut info: OSVERSIONINFOEX = unsafe { mem::zeroed() };
     info.dwOSVersionInfoSize = mem::size_of::<OSVERSIONINFOEX>() as u32;

@@ -460,11 +460,14 @@ version = "0.1.1"
 dependencies = [
  "anyhow",
  "env_logger",
+ "libc",
  "log",
  "nalgebra",
  "obfstr",
+ "rand",
  "raw_struct",
  "serde_json",
+ "utils-common",
  "utils-state",
  "valthrun-driver-interface",
  "windows-sys 0.59.0",
@@ -483,9 +486,9 @@ dependencies = [
  "once_cell",
  "pubg",
  "raw_struct",
+ "utils-common",
  "utils-console",
  "utils-state",
- "utils-windows",
  "winres",
 ]
 
@@ -734,12 +737,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
+name = "utils-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "utils-linux",
+ "utils-windows",
+]
+
+[[package]]
 name = "utils-console"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "log",
  "once_cell",
+]
+
+[[package]]
+name = "utils-linux"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "log",
 ]
 
 [[package]]

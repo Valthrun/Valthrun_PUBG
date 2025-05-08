@@ -18,8 +18,8 @@ use pubg::{
     StatePubgHandle,
     StatePubgMemory,
 };
+use utils_common::get_os_info;
 use utils_state::StateRegistry;
-use utils_windows::version_info;
 
 use crate::enhancements::PlayerSpyer;
 
@@ -67,13 +67,23 @@ fn main() {
 }
 
 fn real_main() -> anyhow::Result<()> {
-    let build_info = version_info()?;
+    let os_info = get_os_info()?;
+
+    let platform_info = if os_info.is_windows {
+        format!("Windows build {}", os_info.build_number)
+    } else {
+        format!(
+            "Linux kernel {}.{}.{}",
+            os_info.major_version, os_info.minor_version, os_info.build_number
+        )
+    };
+
     log::info!(
-        "{} v{} ({}). Windows build {}.",
+        "{} v{} ({}). {}.",
         obfstr!("Valthrun_PUBG"),
         env!("CARGO_PKG_VERSION"),
         env!("GIT_HASH"),
-        build_info.dwBuildNumber
+        platform_info
     );
     log::info!("{} {}", obfstr!("Build time:"), env!("BUILD_TIME"));
 
@@ -111,10 +121,10 @@ fn real_main() -> anyhow::Result<()> {
     pubg.add_metrics_record(
         obfstr!("Valthrun_PUBG-status"),
         &format!(
-            "initialized, vesion: {}, git-hash: {}, win-build: {}",
+            "initialized, vesion: {}, git-hash: {}, platform: {}",
             env!("CARGO_PKG_VERSION"),
             env!("GIT_HASH"),
-            build_info.dwBuildNumber
+            platform_info
         ),
     );
 

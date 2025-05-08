@@ -14,10 +14,18 @@ raw_struct = { workspace = true }
 pubg = { path = "../pubg" }
 utils-state = { path = "../utils/state" }
 utils-console = { path = "../utils/console" }
-utils-windows = { path = "../utils/windows" }
+utils-common = { path = "../utils/common" }
 
 once_cell = "1.19"
 
 [build-dependencies]
-winres = "0.1"
 chrono = "0.4.26"
+
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winres = "0.1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+utils-common = { path = "../utils/common", features = ["windows"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+utils-common = { path = "../utils/common", features = ["linux"] }

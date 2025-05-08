@@ -4,8 +4,8 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum InterfaceError {
     #[error("failed to find any memory driver")]
-    NoDriverFound,
-
+    NoDriverFound, 
+    
     #[error("only zenith driver is supported")]
     NotZenithDriver,
 
@@ -14,6 +14,9 @@ pub enum InterfaceError {
 
     #[error("missing command handler execute export")]
     DriverMissingExecuterExport,
+
+    #[error("missing startup export")]
+    DriverMissingStartupExport,
 
     #[error(
         "protocol miss match (expected {interface_protocol} but driver supports {driver_protocol})"
@@ -60,7 +63,10 @@ impl InterfaceError {
                 [
                     obfstr!("** PLEASE READ CAREFULLY **"),
                     obfstr!("No driver interface for the driver communication found."),
+                    #[cfg(windows)]
                     obfstr!("Ensure that the according \"driver_[...].dll\" file is present."),
+                    #[cfg(unix)]
+                    obfstr!("Ensure that the according \"libdriver_[...].so\" file is present."),
                     obfstr!(""),
                     obfstr!("For more information please refer to"),
                     obfstr!("https://wiki.valth.run/troubleshooting/overlay/driver_interface_missing"),
@@ -96,8 +102,8 @@ impl InterfaceError {
             }
             &InterfaceError::ProcessUnknown => {
                 [
-                    obfstr!("Could not find TslGame process."),
-                    obfstr!("Please start Pubg prior to executing this application!"),
+                    obfstr!("Could not find PUBG process."),
+                    obfstr!("Please start PUBG prior to executing this application!"),
                 ].join("\n")
             }
             _ => return None,
