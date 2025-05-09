@@ -31,8 +31,6 @@ impl PlayerSpyer {
         players_data: &mut Vec<(StatePlayerInfo, u32, u32, i32)>,
     ) -> anyhow::Result<()> {
         let decrypt = states.resolve::<StateDecrypt>(())?;
-        let pubg_handle = states.resolve::<StatePubgHandle>(())?;
-        let mut gname_cache = states.resolve_mut::<StateGNameCache>(())?;
         let memory = states.resolve::<StatePubgMemory>(())?;
         let local_player_info = states.resolve::<StateLocalPlayerInfo>(())?;
 
@@ -44,12 +42,6 @@ impl PlayerSpyer {
             let actor = actor_ptr
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
-
-            let name = gname_cache.get_gname_by_id(&decrypt, &pubg_handle, &memory, actor.id()?)?;
-
-            if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
-                continue;
-            }
 
             let root_component = match actor
                 .root_component()?
