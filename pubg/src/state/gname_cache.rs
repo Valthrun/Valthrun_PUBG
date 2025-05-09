@@ -20,6 +20,8 @@ use crate::{
 };
 
 pub const G_NAMES_OFFSET: u64 = 0x10812CE8;
+pub const ELEMENTS_PER_CHUNK: u64 = 0x41A4;
+pub const G_NAMES_OFFSET2: u64 = 0x10;
 
 pub struct StateGNameCache {
     cache: HashMap<u32, String>,
@@ -74,22 +76,20 @@ impl StateGNameCache {
                             pubg_handle.memory_address(Module::Game, G_NAMES_OFFSET)?,
                         )
                         .map_err(|err| anyhow::anyhow!("{}", err))?,
-                    ) + 0x8,
+                    ) + G_NAMES_OFFSET2,
                 )
                 .map_err(|err| anyhow::anyhow!("{}", err))?,
             );
-
             let f_name_ptr = u64::read_object(
                 memory.view(),
-                g_names_address + ((decrypted_id as u64) / 0x3FD0) * 8,
+                g_names_address + ((decrypted_id as u64) / ELEMENTS_PER_CHUNK) * 8,
             )
             .map_err(|err| anyhow::anyhow!("{}", err))? as u64;
             let f_name = PtrCStr::read_object(
                 memory.view(),
-                f_name_ptr + ((decrypted_id as u64) % 0x3FD0) * 8,
+                f_name_ptr + ((decrypted_id as u64) % ELEMENTS_PER_CHUNK) * 8,
             )
             .map_err(|err| anyhow::anyhow!("{}", err))?;
-
             let name = f_name
                 .read_string(memory.view(), 0x10)?
                 .context("f_name nullptr")?;

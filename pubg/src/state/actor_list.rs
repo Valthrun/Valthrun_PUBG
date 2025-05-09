@@ -28,8 +28,6 @@ use crate::{
     StatePubgMemory,
 };
 
-const CACHED_ACTOR_IDS: [u32; 2] = [147548544, 181103488];
-
 #[derive(Default)]
 pub struct ActorCache {
     pub actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>>,
@@ -89,10 +87,7 @@ impl StateActorLists {
         memory: &StatePubgMemory,
         gname_cache: &mut StateGNameCache,
     ) -> anyhow::Result<()> {
-        let mut current_actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>> = CACHED_ACTOR_IDS
-            .iter()
-            .map(|&id| (id, Vec::new()))
-            .collect();
+        let mut current_actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>> = HashMap::new();
         let mut current_addresses = HashSet::new();
 
         // Scan through all actors and collect the ones we want to cache

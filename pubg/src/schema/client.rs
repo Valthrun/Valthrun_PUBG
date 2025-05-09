@@ -75,7 +75,7 @@ where
 
 #[raw_struct(size = 0x358)]
 pub struct AActor {
-    #[field(offset = 0x10)]
+    #[field(offset = 0x24)]
     pub id: u32,
 
     #[field(offset = 0x350)]

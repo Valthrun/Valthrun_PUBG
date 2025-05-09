@@ -38,7 +38,11 @@ use crate::{
     StatePubgMemory,
 };
 
+#[cfg(target_os = "windows")]
 type XenuineDecrypt = unsafe extern "fastcall" fn(u64, u64) -> u64;
+
+#[cfg(target_os = "linux")]
+type XenuineDecrypt = unsafe extern "win64" fn(u64, u64) -> u64;
 
 pub const DECRYPT_OFFSET: u64 = 0x0EA2DA28;
 
