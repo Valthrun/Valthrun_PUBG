@@ -107,6 +107,7 @@ impl Enhancement for PlayerSpyer {
         let mut players_data: Vec<(StatePlayerInfo, u32, u32, i32)> = Vec::new();
 
         let cached_actors = actor_lists.cached_actors();
+        log::info!("cached_actors count: {}", cached_actors.len());
         for (_actor_id, actor_list) in cached_actors {
             self.collect_players_info(&ctx.states, actor_list, &mut players_data)?;
         }
@@ -121,6 +122,8 @@ impl Enhancement for PlayerSpyer {
         players_data.retain(|x| x.2 != first_team);
 
         players_data.dedup_by(|a, b| a.1 == b.1);
+
+        log::info!("players_data count: {}", players_data.len());
 
         for (player_info, distance, team_id, angle) in players_data {
             log::info!(
