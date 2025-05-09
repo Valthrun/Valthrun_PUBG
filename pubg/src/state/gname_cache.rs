@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use std::fs::{OpenOptions, File};
+use std::io::Write;
+use std::path::Path;
 
 use anyhow::Context;
 use raw_struct::FromMemoryView;
@@ -25,14 +28,22 @@ pub const G_NAMES_OFFSET2: u64 = 0x10;
 
 pub struct StateGNameCache {
     cache: HashMap<u32, String>,
+    log_file: Option<File>,
 }
 
 impl State for StateGNameCache {
     type Parameter = ();
 
     fn create(_states: &StateRegistry, _param: Self::Parameter) -> anyhow::Result<Self> {
+        let log_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("gnames_log.txt")
+            .ok();
+            
         Ok(Self {
             cache: HashMap::new(),
+            log_file,
         })
     }
 
@@ -43,8 +54,15 @@ impl State for StateGNameCache {
 
 impl StateGNameCache {
     pub fn new() -> Self {
+        let log_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("gnames_log.txt")
+            .ok();
+            
         Self {
             cache: HashMap::new(),
+            log_file,
         }
     }
 
@@ -94,6 +112,9 @@ impl StateGNameCache {
                 .read_string(memory.view(), 0x10)?
                 .context("f_name nullptr")?;
 
+            // Write the new GName to the log file
+            self.log_gname(decrypted_id, &name);
+            
             self.insert(decrypted_id, name.clone());
             Ok(name)
         }
@@ -105,5 +126,12 @@ impl StateGNameCache {
 
     pub fn insert(&mut self, id: u32, name: String) {
         self.cache.insert(id, name);
+    }
+    
+    fn log_gname(&mut self, id: u32, name: &str) {
+        if let Some(file) = &mut self.log_file {
+            let _ = writeln!(file, "ID: {}, Name: {}", id, name);
+            let _ = file.flush();
+        }
     }
 }
