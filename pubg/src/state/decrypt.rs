@@ -172,7 +172,7 @@ impl StateDecrypt {
 
     #[inline]
     pub fn decrypt_c_index(value: u32) -> u32 {
-        let rotated = (value ^ 0xD6F8294D).rotate_left(0x04);
+        let rotated = (value ^ 0xD6F8294D).rotate_right(0x04);
         rotated ^ (rotated << 0x10) ^ 0x6519E558
     }
 }

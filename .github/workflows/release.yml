@@ -117,7 +117,7 @@ jobs:
           }
           
           # Prepare additional sections
-          $featuresSection = "## 🛠️  Features`n- Distance from players`n- Players health`n- Angle to players`n`n## 🔧 Setup Requirements`n- Premium Zenith driver (available at https://valth.run/)\n- Windows OS\n\n## ℹ️ Linux Build\n- Fully functional Linux test build with consistent simulated data\n- Perfect for development and testing on Linux platforms\n- Features proper executable memory allocation with libc's mmap\n- Contains custom x86_64 assembly for deterministic behavior"
+          $featuresSection = "## 🛠️  Features`n- Distance from players`n- Players health`n- Angle to players`n`n## 🔧 Setup Requirements`n- Premium Zenith driver (available at https://valth.run/)`n- Run the executable in VM or WSL (for better safety)"
           
           # Combine release notes with additional sections
           $fullReleaseNotes = $releaseNotes + $featuresSection

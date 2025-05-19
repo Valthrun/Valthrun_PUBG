@@ -22,7 +22,7 @@ pub struct UWorld {
     pub game_instance: EncryptedPtr64<dyn GameInstance>,
 }
 
-#[raw_struct(size = 0xF8)]
+#[raw_struct(size = 0x98)]
 pub struct ULevel {
     #[field(offset = 0x90)]
     pub actors: EncryptedPtr64<dyn TArray<Ptr64<dyn AActor>>>,
