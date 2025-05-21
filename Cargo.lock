@@ -268,7 +268,7 @@ dependencies = [
 
 [[package]]
 name = "image_dumper"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -456,7 +456,7 @@ dependencies = [
 
 [[package]]
 name = "pubg"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "env_logger",
@@ -475,7 +475,7 @@ dependencies = [
 
 [[package]]
 name = "pubg_controller"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "chrono",
