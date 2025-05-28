@@ -31,6 +31,9 @@ jobs:
           $VERSION = $env:GITHUB_REF -replace '^refs/tags/v',''
           echo "Extracted version: $VERSION"
           echo "ARTIFACT_VERSION=$VERSION" >> $env:GITHUB_ENV
+          $SHORT_SHA = git rev-parse --short HEAD
+          echo "Extracted short SHA: $SHORT_SHA"
+          echo "SHORT_SHA=$SHORT_SHA" >> $env:GITHUB_ENV
 
       - name: Build Project
         run: |
@@ -146,7 +149,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: artifacts/pubg_controller.exe
-          asset_name: "pubg_enhancer_${{ env.ARTIFACT_VERSION }}.exe"
+          asset_name: "pubg_enhancer_${{ env.SHORT_SHA }}.exe"
           asset_content_type: application/octet-stream
 
   build-linux:
@@ -172,6 +175,9 @@ jobs:
           VERSION=$(echo $GITHUB_REF | sed 's/refs\/tags\/v//')
           echo "Extracted version: $VERSION"
           echo "ARTIFACT_VERSION=$VERSION" >> $GITHUB_ENV
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "Extracted short SHA: $SHORT_SHA"
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
 
       - name: Build Linux Project
         run: |
@@ -207,5 +213,5 @@ jobs:
         with:
           upload_url: ${{ steps.get_release.outputs.result }}
           asset_path: artifacts/pubg_controller
-          asset_name: "pubg_enhancer_${{ env.ARTIFACT_VERSION }}"
+          asset_name: "pubg_enhancer_${{ env.SHORT_SHA }}"
           asset_content_type: application/octet-stream
