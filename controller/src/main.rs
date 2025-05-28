@@ -2,7 +2,10 @@ use std::{
     cell::RefCell,
     env,
     rc::Rc,
-    sync::Arc,
+    sync::{
+        mpsc,
+        Arc,
+    },
     thread,
     time::{
         Duration,
@@ -18,7 +21,9 @@ use pubg::{
     StatePubgHandle,
     StatePubgMemory,
 };
+use ratatui::text::Line;
 use utils_common::get_os_info;
+use utils_console;
 use utils_state::StateRegistry;
 
 use crate::enhancements::PlayerSpyer;
@@ -59,14 +64,31 @@ impl Application {
 }
 
 fn main() {
-    utils_console::init().expect("Failed to initialize logger");
-    if let Err(err) = real_main() {
-        utils_console::show_critical_error(&format!("{:#}", err));
-        utils_console::flush_frame_logs();
+    if let Err(e) = utils_console::init_logger() {
+        eprintln!("Failed to initialize logger: {:?}", e);
+        return;
     }
+
+    let (log_sender, log_receiver) = mpsc::channel::<Vec<Line<'static>>>();
+
+    let app_thread_handle = thread::spawn(move || {
+        if let Err(err) = app_logic_thread(log_sender) {
+            log::error!("Critical error in app logic thread: {:#}", err);
+        }
+    });
+
+    if let Err(e) = utils_console::run_tui(log_receiver) {
+        log::error!("TUI exited with an error: {:?}", e);
+    }
+
+    if let Err(e) = app_thread_handle.join() {
+        log::error!("App logic thread panicked: {:?}", e);
+    }
+
+    log::info!("Application terminated.");
 }
 
-fn real_main() -> anyhow::Result<()> {
+fn app_logic_thread(log_sender: mpsc::Sender<Vec<Line<'static>>>) -> anyhow::Result<()> {
     let os_info = get_os_info()?;
 
     let platform_info = if os_info.is_windows {
@@ -79,25 +101,34 @@ fn real_main() -> anyhow::Result<()> {
     };
 
     log::info!(
-        "{} v{} ({}). {}.",
+        "[STATUS] {} v{} ({}). {}.",
         obfstr!("Valthrun_PUBG"),
         env!("CARGO_PKG_VERSION"),
         env!("GIT_HASH"),
         platform_info
     );
-    log::info!("{} {}", obfstr!("Build time:"), env!("BUILD_TIME"));
+    log::info!("[STATUS] {} {}", obfstr!("Build time:"), env!("BUILD_TIME"));
+
+    let initial_logs = utils_console::get_and_clear_log_lines();
+    if !initial_logs.is_empty() {
+        if log_sender.send(initial_logs).is_err() {
+            log::warn!("Failed to send initial logs to TUI; TUI might have closed early.");
+        }
+    }
 
     let pubg = match PubgHandle::create(false) {
         Ok(pubg) => pubg,
         Err(err) => {
-            if let Some(err) = err.downcast_ref::<InterfaceError>() {
-                if let Some(detailed_message) = err.detailed_message() {
-                    utils_console::show_critical_error(&detailed_message);
-                    utils_console::flush_frame_logs();
-                    return Ok(());
+            log::error!("Failed to create PubgHandle: {:#}", err);
+            if let Some(interface_err) = err.downcast_ref::<InterfaceError>() {
+                if interface_err.detailed_message().is_some() {
+                    // Detailed message already logged.
                 }
             }
-
+            let logs = utils_console::get_and_clear_log_lines();
+            log_sender.send(logs).map_err(|se| {
+                anyhow::anyhow!("Failed to send PubgHandle error logs to TUI: {}", se)
+            })?;
             return Err(err);
         }
     };
@@ -111,9 +142,7 @@ fn real_main() -> anyhow::Result<()> {
     let app = Application {
         states,
         pubg: pubg.clone(),
-
         enhancements: vec![Rc::new(RefCell::new(PlayerSpyer {}))],
-
         frame_read_calls: 0,
     };
     let app = Rc::new(RefCell::new(app));
@@ -128,7 +157,7 @@ fn real_main() -> anyhow::Result<()> {
         ),
     );
 
-    log::info!("App initialized.");
+    log::info!("[STATUS] App initialized.");
 
     let mut update_fail_count = 0;
     let mut update_timeout: Option<(Instant, Duration)> = None;
@@ -138,33 +167,38 @@ fn real_main() -> anyhow::Result<()> {
             if timeout.elapsed() > *target {
                 update_timeout = None;
             } else {
-                // On timeout, just skip the update
+                thread::sleep(Duration::from_millis(50));
+                let logs = utils_console::get_and_clear_log_lines();
+                if !logs.is_empty() {
+                    if log_sender.send(logs).is_err() {
+                        log::info!("App logic: TUI closed, exiting loop.");
+                        break;
+                    }
+                }
                 continue;
             }
         }
 
-        // Update game state
         if let Err(err) = app.borrow_mut().update() {
+            log::error!("App update failed: {:#}", err);
             if update_fail_count >= 10 {
-                log::error!(
-                    "Failed to update app for 10 times. Waiting for 1 second: {}",
-                    err
-                );
-                log::error!("Last error: {:#}", err);
-
+                log::error!("Failed to update app for 10 times. Waiting for 1 second.");
                 update_timeout = Some((Instant::now(), Duration::from_secs(1)));
                 update_fail_count = 0;
-                utils_console::flush_frame_logs();
-                continue;
             } else {
                 update_fail_count += 1;
             }
+        } else {
+            update_fail_count = 0;
         }
 
-        // Update display
-        utils_console::flush_frame_logs();
+        let logs = utils_console::get_and_clear_log_lines();
+        if log_sender.send(logs).is_err() {
+            log::info!("App logic: TUI closed, exiting loop.");
+            break;
+        }
 
-        // Control frame rate
         thread::sleep(Duration::from_millis(50));
     }
+    Ok(())
 }

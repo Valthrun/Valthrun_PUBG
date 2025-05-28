@@ -1,10 +1,4 @@
-use std::{
-    io::{
-        self,
-        Write,
-    },
-    sync::Mutex,
-};
+use std::sync::Mutex;
 
 use log::{
     Level,
@@ -14,14 +8,23 @@ use log::{
     SetLoggerError,
 };
 use once_cell::sync::Lazy;
+use ratatui::{
+    style::{
+        Color,
+        Style,
+    },
+    text::{
+        Line,
+        Span,
+    },
+};
 
-static FRAME_LOG_BUFFER: Lazy<Mutex<Vec<String>>> = Lazy::new(|| Mutex::new(Vec::new()));
-static CONSOLE_HEIGHT: Lazy<Mutex<usize>> = Lazy::new(|| Mutex::new(30)); // default height
-static FIRST_FLUSH: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(true));
+static FRAME_LOG_BUFFER: Lazy<Mutex<Vec<Line>>> = Lazy::new(|| Mutex::new(Vec::new()));
+const MAX_LOG_LINES: usize = 1000;
 
-pub struct FrameLogger;
+pub struct RatatuiLogger;
 
-impl Log for FrameLogger {
+impl Log for RatatuiLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= Level::Info
     }
@@ -29,69 +32,43 @@ impl Log for FrameLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let level_color = match record.level() {
-                Level::Error => "\x1B[31m", // Red
-                Level::Warn => "\x1B[33m",  // Yellow
-                Level::Info => "\x1B[32m",  // Green
-                Level::Debug => "\x1B[36m", // Cyan
-                Level::Trace => "\x1B[90m", // Bright black (gray)
+                Level::Error => Color::Red,
+                Level::Warn => Color::Yellow,
+                Level::Info => Color::Green,
+                Level::Debug => Color::Cyan,
+                Level::Trace => Color::Gray,
             };
-            let reset = "\x1B[0m";
-            let log_entry = format!(
-                "{}[{}]{} {}",
-                level_color,
-                record.level(),
-                reset,
-                record.args()
+
+            let level_span = Span::styled(
+                format!("[ {} ]", record.level()),
+                Style::default().fg(level_color),
             );
-            FRAME_LOG_BUFFER.lock().unwrap().push(log_entry);
+            let message_span = Span::raw(format!(" {}", record.args()));
+
+            let line = Line::from(vec![level_span, message_span]);
+
+            let mut buffer = FRAME_LOG_BUFFER.lock().unwrap();
+            buffer.push(line);
+
+            if buffer.len() > MAX_LOG_LINES {
+                let to_remove = buffer.len() - MAX_LOG_LINES;
+                buffer.drain(0..to_remove);
+            }
         }
     }
 
-    fn flush(&self) {}
-}
-
-pub fn init() -> Result<(), SetLoggerError> {
-    // Clear screen and scroll buffer, hide cursor
-    print!("\x1B[2J\x1B[3J\x1B[H\x1B[?25l");
-    io::stdout().flush().unwrap();
-    log::set_logger(&FrameLogger).map(|()| log::set_max_level(log::LevelFilter::Info))
-}
-
-pub fn flush_frame_logs() {
-    let mut frame_buffer = FRAME_LOG_BUFFER.lock().unwrap();
-    let height = *CONSOLE_HEIGHT.lock().unwrap();
-    let mut is_first_flush = FIRST_FLUSH.lock().unwrap();
-
-    if *is_first_flush {
-        // On first flush, print everything from home position
-        print!("\x1B[H");
-        for (i, log) in frame_buffer.iter().enumerate() {
-            print!("\x1B[{};0H\x1B[K{}", i + 1, log);
-            io::stdout().flush().unwrap();
-        }
-        *is_first_flush = false;
-    } else {
-        // On subsequent flushes, reserve first 3 lines
-        let available_height = height.saturating_sub(3);
-        let start = if frame_buffer.len() > available_height {
-            frame_buffer.len() - available_height
-        } else {
-            0
-        };
-
-        print!("\x1B[4;0H");
-        io::stdout().flush().unwrap();
-
-        for (i, log) in frame_buffer.iter().skip(start).enumerate() {
-            print!("\x1B[{};0H\x1B[K{}", i + 4, log);
-            io::stdout().flush().unwrap();
-        }
-
-        for i in frame_buffer.len()..available_height {
-            print!("\x1B[{};0H\x1B[K", i + 4);
-            io::stdout().flush().unwrap();
-        }
+    fn flush(&self) {
+        // Flushing is handled by the TUI drawing loop, so this can be a no-op.
     }
+}
 
-    frame_buffer.clear();
+pub fn init_logger() -> Result<(), SetLoggerError> {
+    log::set_logger(&RatatuiLogger).map(|()| log::set_max_level(log::LevelFilter::Info))
+}
+
+/// Retrieves all currently buffered log lines and then clears the buffer.
+pub fn get_and_clear_log_lines() -> Vec<Line<'static>> {
+    let mut buffer = FRAME_LOG_BUFFER.lock().unwrap();
+    let lines: Vec<Line> = buffer.drain(..).collect();
+    lines
 }

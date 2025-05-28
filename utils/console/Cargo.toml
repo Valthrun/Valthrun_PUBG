@@ -7,3 +7,5 @@ edition = "2021"
 anyhow = { workspace = true }
 log = { workspace = true }
 once_cell = "1.19"
+ratatui = { version = "0.26.1", features = ["all-widgets", "crossterm"] }
+crossterm = "0.27.0"
