@@ -1,4 +1,8 @@
-use std::sync::Mutex;
+use std::{
+    fs::OpenOptions,
+    io::Write,
+    sync::Mutex,
+};
 
 use log::{
     Level,
@@ -20,6 +24,7 @@ use ratatui::{
 };
 
 static FRAME_LOG_BUFFER: Lazy<Mutex<Vec<Line>>> = Lazy::new(|| Mutex::new(Vec::new()));
+static LOG_FILE: Lazy<Mutex<Option<std::fs::File>>> = Lazy::new(|| Mutex::new(None));
 const MAX_LOG_LINES: usize = 1000;
 
 pub struct RatatuiLogger;
@@ -47,6 +52,7 @@ impl Log for RatatuiLogger {
 
             let line = Line::from(vec![level_span, message_span]);
 
+            // Write to TUI buffer
             let mut buffer = FRAME_LOG_BUFFER.lock().unwrap();
             buffer.push(line);
 
@@ -54,16 +60,49 @@ impl Log for RatatuiLogger {
                 let to_remove = buffer.len() - MAX_LOG_LINES;
                 buffer.drain(0..to_remove);
             }
+
+            // Write to file if enabled
+            if let Ok(mut file_opt) = LOG_FILE.lock() {
+                if let Some(ref mut file) = *file_opt {
+                    let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S%.3f");
+                    let file_line =
+                        format!("{} [ {} ] {}\n", timestamp, record.level(), record.args());
+                    let _ = file.write_all(file_line.as_bytes());
+                    let _ = file.flush(); // Ensure immediate write
+                }
+            }
         }
     }
 
     fn flush(&self) {
-        // Flushing is handled by the TUI drawing loop, so this can be a no-op.
+        // Flush file logger
+        if let Ok(mut file_opt) = LOG_FILE.lock() {
+            if let Some(ref mut file) = *file_opt {
+                let _ = file.flush();
+            }
+        }
     }
 }
 
 pub fn init_logger() -> Result<(), SetLoggerError> {
     log::set_logger(&RatatuiLogger).map(|()| log::set_max_level(log::LevelFilter::Info))
+}
+
+pub fn enable_file_logging(log_file_path: &str) -> std::io::Result<()> {
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_file_path)?;
+
+    let mut log_file = LOG_FILE.lock().unwrap();
+    *log_file = Some(file);
+
+    Ok(())
+}
+
+pub fn disable_file_logging() {
+    let mut log_file = LOG_FILE.lock().unwrap();
+    *log_file = None;
 }
 
 /// Retrieves all currently buffered log lines and then clears the buffer.

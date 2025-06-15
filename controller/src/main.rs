@@ -69,6 +69,17 @@ fn main() {
         return;
     }
 
+    // Enable file logging only if a command line argument is provided
+    if let Some(log_file) = env::args().nth(1) {
+        if let Err(e) = utils_console::enable_file_logging(&log_file) {
+            log::warn!("Failed to enable file logging to '{}': {:?}", log_file, e);
+        } else {
+            log::info!("File logging enabled: {}", log_file);
+        }
+    } else {
+        log::info!("File logging disabled - provide a log file path as argument to enable");
+    }
+
     let (log_sender, log_receiver) = mpsc::channel::<Vec<Line<'static>>>();
 
     let app_thread_handle = thread::spawn(move || {
