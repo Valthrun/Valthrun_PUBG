@@ -19,8 +19,8 @@ use crate::{
     StatePubgMemory,
 };
 
-pub const G_NAMES_OFFSET: u64 = 0x106E11E8;
-pub const ELEMENTS_PER_CHUNK: u64 = 0x3F58;
+pub const G_NAMES_OFFSET: u64 = 0x10FB1538;
+pub const ELEMENTS_PER_CHUNK: u64 = 0x3F34;
 pub const G_NAMES_OFFSET2: u64 = 0x0008;
 
 pub struct StateGNameCache {
