@@ -5,7 +5,7 @@ use raw_struct::{
 
 use crate::EncryptedPtr64;
 
-pub const ENTRY_OFFSET: u64 = 0x11122508;
+pub const ENTRY_OFFSET: u64 = 0x10DC8698;
 
 #[raw_struct(size = 0x8)]
 pub struct Entry {
@@ -13,26 +13,26 @@ pub struct Entry {
     pub u_world: EncryptedPtr64<dyn UWorld>,
 }
 
-#[raw_struct(size = 0x0968)]
+#[raw_struct(size = 0x09F0)]
 pub struct UWorld {
-    #[field(offset = 0x02B8)]
+    #[field(offset = 0x0180)]
     pub u_level: EncryptedPtr64<dyn ULevel>,
 
-    #[field(offset = 0x0960)]
+    #[field(offset = 0x09E8)]
     pub game_instance: EncryptedPtr64<dyn GameInstance>,
 }
 
-#[raw_struct(size = 0x0210)]
+#[raw_struct(size = 0x01F8)]
 pub struct ULevel {
-    #[field(offset = 0x0208)]
+    #[field(offset = 0x01F0)]
     pub actors: EncryptedPtr64<dyn TArray<Ptr64<dyn AActor>>>,
 }
 
-#[raw_struct(size = 0x0050)]
+#[raw_struct(size = 0x0040)]
 pub struct GameInstance {
     /*#[field(offset = 0x60)]
     pub local_players: Ptr64<dyn EncryptedTArray<dyn ULocalPlayer>>,*/
-    #[field(offset = 0x0048)]
+    #[field(offset = 0x0038)]
     pub local_player: Ptr64<EncryptedPtr64<dyn ULocalPlayer>>,
 }
 
@@ -73,66 +73,66 @@ where
     pub max: u32,
 }
 
-#[raw_struct(size = 0x0138)]
+#[raw_struct(size = 0x0120)]
 pub struct AActor {
     #[field(offset = 0x0020)]
     pub id: u32,
 
-    #[field(offset = 0x0130)]
+    #[field(offset = 0x0118)]
     pub root_component: EncryptedPtr64<dyn USceneComponent>,
 }
 
-#[raw_struct(size = 0x04E0)]
+#[raw_struct(size = 0x04D8)]
 pub struct APlayerController {
-    #[field(offset = 0x04D8)]
+    #[field(offset = 0x04D0)]
     pub player_camera_manager: Ptr64<dyn APlayerCameraManager>,
 }
 impl AActor for dyn APlayerController {}
 
-#[raw_struct(size = 0x168C)]
+#[raw_struct(size = 0x173C)]
 pub struct APawn {
-    #[field(offset = 0x1688)]
+    #[field(offset = 0x1738)]
     pub last_team_num: u32,
 }
 impl AActor for dyn APawn {}
 
-#[raw_struct(size = 0x09BC)]
+#[raw_struct(size = 0x0A56)]
 pub struct ACharacter {
-    #[field(offset = 0x0140)]
+    #[field(offset = 0x0116)]
     pub health_flag: u8,
 
-    #[field(offset = 0x0960)]
+    #[field(offset = 0x0A40)]
     pub health: f32,
 
-    #[field(offset = 0x09A0)]
+    #[field(offset = 0x0990)]
     pub health1: u32,
 
-    #[field(offset = 0x09B8)]
+    #[field(offset = 0x09A0)]
     pub health2: f32,
 
-    #[field(offset = 0x0974)]
+    #[field(offset = 0x0A54)]
     pub health3: u8,
 
-    #[field(offset = 0x0975)]
+    #[field(offset = 0x0A55)]
     pub health5: u8,
 
-    #[field(offset = 0x0970)]
+    #[field(offset = 0x0A50)]
     pub health6: u32,
 }
 impl APawn for dyn ACharacter {}
 
-#[raw_struct(size = 0x1750)]
+#[raw_struct(size = 0x09D0)]
 pub struct APlayerCameraManager {
-    #[field(offset = 0x1744)]
+    #[field(offset = 0x0440)]
     pub camera_rot: [f32; 3],
 
-    #[field(offset = 0x1738)]
+    #[field(offset = 0x09C4)]
     pub camera_pos: [f32; 3],
 }
 impl AActor for dyn APlayerCameraManager {}
 
-#[raw_struct(size = 0x033C)]
+#[raw_struct(size = 0x026C)]
 pub struct USceneComponent {
-    #[field(offset = 0x0330)]
+    #[field(offset = 0x0260)]
     pub relative_location: [f32; 3],
 }
