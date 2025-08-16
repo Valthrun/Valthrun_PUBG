@@ -44,7 +44,7 @@ type XenuineDecrypt = unsafe extern "fastcall" fn(u64, u64) -> u64;
 #[cfg(target_os = "linux")]
 type XenuineDecrypt = unsafe extern "win64" fn(u64, u64) -> u64;
 
-pub const DECRYPT_OFFSET: u64 = 0x0F2DD728;
+pub const DECRYPT_OFFSET: u64 = 0x0F30AC28;
 
 pub struct StateDecrypt {
     decrypt_key: u64,
@@ -172,7 +172,7 @@ impl StateDecrypt {
 
     #[inline]
     pub fn decrypt_c_index(value: u32) -> u32 {
-        let rotated = (value ^ 0x4DC83263).rotate_left(0x0003);
-        rotated ^ (rotated << 0x0010) ^ 0x7FAB3263
+        let rotated = (value ^ 0x891C835E).rotate_right(0x0002);
+        rotated ^ (rotated << 0x0010) ^ 0xA42835E
     }
 }
