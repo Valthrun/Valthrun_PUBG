@@ -155,6 +155,8 @@ def update_client_rs_field_offsets(src: str, offsets: Dict[str, int]) -> str:
         ("ACharacter", "health3"): "Health3",
         ("ACharacter", "health5"): "Health5",
         ("ACharacter", "health6"): "Health6",
+        ("ACharacter", "mesh"): "Mesh",
+        ("USkeletalMeshComponent", "always_create_physics_state"): "bAlwaysCreatePhysicsState",
         ("APlayerCameraManager", "camera_rot"): "CameraRot",
         ("APlayerCameraManager", "camera_pos"): "CameraPos",
         ("USceneComponent", "relative_location"): "ComponentLocation",

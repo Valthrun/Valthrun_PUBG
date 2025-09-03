@@ -69,6 +69,10 @@ impl PlayerSpyer {
                 root_component,
             })?;
 
+            if player_info.physics_state == 4 {
+                continue;
+            }
+
             if player_info.health < 1 || player_info.health > 100 {
                 continue;
             }
