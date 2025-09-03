@@ -28,7 +28,7 @@ impl PlayerSpyer {
         &self,
         states: &StateRegistry,
         actor_list: &Vec<(u64, Ptr64<dyn AActor>)>,
-        players_data: &mut Vec<(StatePlayerInfo, u32, u32, i32)>,
+        players_data: &mut Vec<(StatePlayerInfo, f32, u32, i32)>,
     ) -> anyhow::Result<()> {
         let decrypt = states.resolve::<StateDecrypt>(())?;
         let pubg_handle = states.resolve::<StatePubgHandle>(())?;
@@ -77,10 +77,13 @@ impl PlayerSpyer {
                 continue;
             }
 
-            let distance = ((player_info.position[0] - local_player_info.location[0]).powi(2)
+            let distance_in_meters = (((player_info.position[0] - local_player_info.location[0])
+                .powi(2)
                 + (player_info.position[1] - local_player_info.location[1]).powi(2)
                 + (player_info.position[2] - local_player_info.location[2]).powi(2))
-            .sqrt() as u32;
+            .sqrt())
+            .round()
+                / 100.0;
 
             let difference = [
                 player_info.position[0] - local_player_info.location[0],
@@ -106,7 +109,7 @@ impl PlayerSpyer {
                 angle_diff as i32
             };
 
-            players_data.push((player_info.clone(), distance, team_id, angle_diff));
+            players_data.push((player_info.clone(), distance_in_meters, team_id, angle_diff));
         }
         Ok(())
     }
@@ -115,8 +118,9 @@ impl PlayerSpyer {
 impl Enhancement for PlayerSpyer {
     fn update(&mut self, ctx: &crate::UpdateContext) -> anyhow::Result<()> {
         let actor_lists = ctx.states.resolve::<StateActorLists>(())?;
+        let local_player_info = ctx.states.resolve::<StateLocalPlayerInfo>(())?;
 
-        let mut players_data: Vec<(StatePlayerInfo, u32, u32, i32)> = Vec::new();
+        let mut players_data: Vec<(StatePlayerInfo, f32, u32, i32)> = Vec::new();
 
         let cached_actors = actor_lists.cached_actors();
         for (_actor_id, actor_list) in cached_actors {
@@ -134,15 +138,38 @@ impl Enhancement for PlayerSpyer {
 
         players_data.dedup_by(|a, b| a.1 == b.1);
 
+        // Prepare radar frame points (keep logs as well)
+        let mut radar_points: Vec<utils_console::RadarPoint> = Vec::new();
+
         for (player_info, distance, team_id, angle) in players_data {
             log::info!(
-                "Distance: {} Health: {} Angle: {} Team: {}",
+                "Distance: {}m Health: {} Angle: {} Team: {}",
                 distance,
                 player_info.health,
                 angle,
                 team_id
             );
+
+            // Convert to horizontal x/y in meters relative to local player
+            let dx = (player_info.position[0] - local_player_info.location[0]) as f32 / 100.0;
+            let dy = (player_info.position[1] - local_player_info.location[1]) as f32 / 100.0;
+            let dz =
+                ((player_info.position[2] - local_player_info.location[2]) / 100.0).round() as i32;
+            radar_points.push(utils_console::RadarPoint {
+                x: dx,
+                y: dy,
+                dz,
+                health: player_info.health,
+            });
         }
+
+        // Send radar frame
+        let yaw_deg = local_player_info.rotation[1];
+        let frame = utils_console::RadarFrame {
+            yaw_deg,
+            points: radar_points,
+        };
+        let _ = ctx.radar_tx.send(frame);
 
         Ok(())
     }

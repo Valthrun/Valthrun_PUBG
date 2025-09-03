@@ -11,4 +11,8 @@ pub use logger::{
 };
 
 mod tui;
-pub use tui::run_tui;
+pub use tui::{
+    run_tui,
+    RadarFrame,
+    RadarPoint,
+};

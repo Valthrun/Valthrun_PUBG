@@ -32,6 +32,7 @@ mod enhancements;
 
 pub struct UpdateContext<'a> {
     pub states: &'a StateRegistry,
+    pub radar_tx: std::sync::mpsc::Sender<utils_console::RadarFrame>,
 }
 
 pub struct Application {
@@ -41,6 +42,7 @@ pub struct Application {
     pub enhancements: Vec<Rc<RefCell<dyn Enhancement>>>,
 
     pub frame_read_calls: usize,
+    pub radar_tx: std::sync::mpsc::Sender<utils_console::RadarFrame>,
 }
 
 impl Application {
@@ -49,6 +51,7 @@ impl Application {
 
         let update_context = UpdateContext {
             states: &self.states,
+            radar_tx: self.radar_tx.clone(),
         };
 
         for enhancement in &self.enhancements {
@@ -81,14 +84,15 @@ fn main() {
     }
 
     let (log_sender, log_receiver) = mpsc::channel::<Vec<Line<'static>>>();
+    let (radar_sender, radar_receiver) = mpsc::channel::<utils_console::RadarFrame>();
 
     let app_thread_handle = thread::spawn(move || {
-        if let Err(err) = app_logic_thread(log_sender) {
+        if let Err(err) = app_logic_thread(log_sender, radar_sender) {
             log::error!("Critical error in app logic thread: {:#}", err);
         }
     });
 
-    if let Err(e) = utils_console::run_tui(log_receiver) {
+    if let Err(e) = utils_console::run_tui(log_receiver, radar_receiver) {
         log::error!("TUI exited with an error: {:?}", e);
     }
 
@@ -99,7 +103,10 @@ fn main() {
     log::info!("Application terminated.");
 }
 
-fn app_logic_thread(log_sender: mpsc::Sender<Vec<Line<'static>>>) -> anyhow::Result<()> {
+fn app_logic_thread(
+    log_sender: mpsc::Sender<Vec<Line<'static>>>,
+    radar_sender: mpsc::Sender<utils_console::RadarFrame>,
+) -> anyhow::Result<()> {
     let os_info = get_os_info()?;
 
     let platform_info = if os_info.is_windows {
@@ -155,6 +162,7 @@ fn app_logic_thread(log_sender: mpsc::Sender<Vec<Line<'static>>>) -> anyhow::Res
         pubg: pubg.clone(),
         enhancements: vec![Rc::new(RefCell::new(PlayerSpyer {}))],
         frame_read_calls: 0,
+        radar_tx: radar_sender.clone(),
     };
     let app = Rc::new(RefCell::new(app));
 
