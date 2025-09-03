@@ -440,7 +440,7 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "image_dumper"
-version = "0.2.17"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -749,7 +749,7 @@ dependencies = [
 
 [[package]]
 name = "pubg"
-version = "0.2.17"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "env_logger",
@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "pubg_controller"
-version = "0.2.17"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "chrono",
