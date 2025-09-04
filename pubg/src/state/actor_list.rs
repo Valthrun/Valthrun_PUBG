@@ -1,13 +1,7 @@
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+use std::collections::HashMap;
 
 use anyhow::Context;
-use raw_struct::{
-    builtins::Ptr64,
-    Reference,
-};
+use raw_struct::builtins::Ptr64;
 use utils_state::{
     State,
     StateCacheType,
@@ -15,10 +9,7 @@ use utils_state::{
 };
 
 use crate::{
-    schema::{
-        AActor,
-        TArray,
-    },
+    schema::AActor,
     state::{
         StateDecrypt,
         StateGNameCache,
@@ -28,15 +19,8 @@ use crate::{
     StatePubgMemory,
 };
 
-#[derive(Default)]
-pub struct ActorCache {
-    pub actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>>,
-    tracked_addresses: HashSet<u64>,
-}
-
 pub struct StateActorLists {
-    array: Reference<dyn TArray<Ptr64<dyn AActor>>>,
-    cache: ActorCache,
+    pub actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>>,
 }
 
 impl State for StateActorLists {
@@ -46,6 +30,8 @@ impl State for StateActorLists {
         let memory = states.resolve::<StatePubgMemory>(())?;
         let decrypt = states.resolve::<StateDecrypt>(())?;
         let u_world = states.resolve::<StateWorld>(())?;
+        let mut gname_cache = states.resolve_mut::<StateGNameCache>(())?;
+        let pubg_handle = states.resolve::<StatePubgHandle>(())?;
 
         let u_level = u_world
             .u_level()
@@ -59,42 +45,12 @@ impl State for StateActorLists {
             .value_reference(memory.view_arc(), &decrypt)
             .context("nullptr")?;
 
-        Ok(Self {
-            array: actor_array,
-            cache: ActorCache::default(),
-        })
-    }
-
-    fn update(&mut self, states: &StateRegistry) -> anyhow::Result<()> {
-        let decrypt = states.resolve::<StateDecrypt>(())?;
-        let pubg_handle = states.resolve::<StatePubgHandle>(())?;
-        let memory = states.resolve::<StatePubgMemory>(())?;
-        let mut gname_cache = states.resolve_mut::<StateGNameCache>(())?;
-        self.update_cache(&decrypt, &pubg_handle, &memory, &mut gname_cache)?;
-        Ok(())
-    }
-
-    fn cache_type() -> StateCacheType {
-        StateCacheType::Persistent
-    }
-}
-
-impl StateActorLists {
-    pub fn update_cache(
-        &mut self,
-        decrypt: &StateDecrypt,
-        pubg_handle: &StatePubgHandle,
-        memory: &StatePubgMemory,
-        gname_cache: &mut StateGNameCache,
-    ) -> anyhow::Result<()> {
         let mut current_actors: HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>> = HashMap::new();
-        let mut current_addresses = HashSet::new();
 
         // Scan through all actors and collect the ones we want to cache
-        for actor_ptr in self
-            .array
+        for actor_ptr in actor_array
             .data()?
-            .elements(memory.view(), 0..self.array.count()? as usize)?
+            .elements(memory.view(), 0..actor_array.count()? as usize)?
         {
             if actor_ptr.is_null() {
                 continue;
@@ -112,49 +68,23 @@ impl StateActorLists {
 
             let actor_addr = actor.reference_address();
 
-            // Skip if we've never seen this actor with our IDs before
-            if !self.cache.tracked_addresses.contains(&actor_addr) {
-                let actor_id = match actor.id() {
-                    Ok(id) => id,
-                    Err(_) => continue,
-                };
+            let actor_id = match actor.id() {
+                Ok(id) => id,
+                Err(_) => continue,
+            };
 
-                current_actors
-                    .entry(actor_id)
-                    .or_default()
-                    .push((actor_addr, actor_ptr.clone()));
-
-                current_addresses.insert(actor_addr);
-            } else {
-                // We know this actor's ID since we've seen it before
-                for (id, actors) in &self.cache.actors {
-                    if actors.iter().any(|(addr, _)| *addr == actor_addr) {
-                        current_actors
-                            .entry(*id)
-                            .or_default()
-                            .push((actor_addr, actor_ptr.clone()));
-                        current_addresses.insert(actor_addr);
-                        break;
-                    }
-                }
-            }
+            current_actors
+                .entry(actor_id)
+                .or_default()
+                .push((actor_addr, actor_ptr.clone()));
         }
 
-        self.cache.actors = current_actors;
-        self.cache.tracked_addresses = current_addresses;
-        Ok(())
+        Ok(Self {
+            actors: current_actors,
+        })
     }
 
-    pub fn get_cached_actors(&self, actor_id: u32) -> Option<&Vec<(u64, Ptr64<dyn AActor>)>> {
-        self.cache.actors.get(&actor_id)
-    }
-
-    pub fn cached_actors(&self) -> &HashMap<u32, Vec<(u64, Ptr64<dyn AActor>)>> {
-        &self.cache.actors
-    }
-
-    pub fn clear(&mut self) {
-        self.cache.actors.clear();
-        self.cache.tracked_addresses.clear();
+    fn cache_type() -> StateCacheType {
+        StateCacheType::Volatile
     }
 }

@@ -122,8 +122,8 @@ impl Enhancement for PlayerSpyer {
 
         let mut players_data: Vec<(StatePlayerInfo, f32, u32, i32)> = Vec::new();
 
-        let cached_actors = actor_lists.cached_actors();
-        for (_actor_id, actor_list) in cached_actors {
+        let actors_map = &actor_lists.actors;
+        for (_actor_id, actor_list) in actors_map {
             self.collect_players_info(&ctx.states, actor_list, &mut players_data)?;
         }
 
