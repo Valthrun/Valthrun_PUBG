@@ -19,9 +19,9 @@ use crate::{
     StatePubgMemory,
 };
 
-pub const G_NAMES_OFFSET: u64 = 0x11292058; // Names
-pub const ELEMENTS_PER_CHUNK: u64 = 0x4198; // ElementsPerChunk
-pub const G_NAMES_OFFSET2: u64 = 0x0010; // NamesOffset
+pub const G_NAMES_OFFSET: u64 = 0x10E63E10; // Names
+pub const ELEMENTS_PER_CHUNK: u64 = 0x40AC; // ElementsPerChunk
+pub const G_NAMES_OFFSET2: u64 = 0x0; // NamesOffset
 
 pub struct StateGNameCache {
     cache: HashMap<u32, String>,

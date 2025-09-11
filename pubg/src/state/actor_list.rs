@@ -60,18 +60,14 @@ impl State for StateActorLists {
                 .value_reference(memory.view_arc())
                 .context("actor nullptr")?;
 
-            let name = gname_cache.get_gname_by_id(&decrypt, &pubg_handle, &memory, actor.id()?)?;
+            let actor_id = actor.id()?;
+            let name = gname_cache.get_gname_by_id(&decrypt, &pubg_handle, &memory, actor_id)?;
 
             if name != "PlayerFemale_A_C" && name != "PlayerMale_A_C" {
                 continue;
             }
 
             let actor_addr = actor.reference_address();
-
-            let actor_id = match actor.id() {
-                Ok(id) => id,
-                Err(_) => continue,
-            };
 
             current_actors
                 .entry(actor_id)

@@ -58,12 +58,12 @@ impl StatePlayerInfo {
 
     /// XOR keys used for player health decryption
     const HEALTH_XOR_KEYS: [u32; 16] = [
-        0xCEC7A59A, 0x9B63B2C6, 0xCAC9A2A5, 0xC6384851, 0xD6911D0A, 0x23DDA8E4, 0x94551C8,
-        0xA521B321, 0xBA87A58, 0xB0EFC687, 0xE275D3B3, 0x878ADBCA, 0xBDD603D5, 0xC6935107,
-        0x51099E38, 0xE7D22A1C,
+        0xCEC7A59A, 0x9B63B2F1, 0xCAF395BD, 0xF138486B, 0xEC911D0A, 0x23DDA8D3, 0x9456BC8,
+        0xBD39B321, 0xBA87A58, 0xA8EFF187, 0xE275E4B3, 0x9F8ADBF0, 0xBDEC34D5, 0xF1936B07,
+        0x6B099E38, 0xE7D22A2B,
     ];
 
-    const HEALTH4: u32 = 0x0A00; // Health4
+    const HEALTH4: u32 = 0x0A30; // Health4
 
     pub fn decrypt_player_health(value: &mut [u8], offset: u32) {
         let xor_keys = unsafe {
