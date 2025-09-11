@@ -10,7 +10,6 @@ members = [
     "driver/interface",
 
     "controller",
-    "image_dumper",
     "pubg",
 ]
 

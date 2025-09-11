@@ -439,23 +439,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
-name = "image_dumper"
-version = "0.3.1"
-dependencies = [
- "anyhow",
- "chrono",
- "env_logger",
- "log",
- "obfstr",
- "once_cell",
- "pubg",
- "utils-console",
- "utils-state",
- "utils-windows",
- "winres",
-]
-
-[[package]]
 name = "indoc"
 version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
