@@ -287,13 +287,39 @@ impl PubgHandle {
         let module_info = self.get_module_info(module).with_context(|| {
             format!("{} {}", obfstr!("missing module"), module.get_module_name())
         })?;
+        log::debug!(
+            "resolve_signature '{}' module base={:#x} size={:#x}",
+            signature.debug_name,
+            module_info.base_address,
+            module_info.module_size
+        );
+
+        let search_start = module_info.base_address;
+        let search_end = module_info.base_address + module_info.module_size;
+        let pattern_len = signature.pattern.length();
+        log::debug!(
+            "searching pattern len {} in [{:#x}..{:#x})",
+            pattern_len,
+            search_start,
+            search_end
+        );
 
         let inst_offset = self
             .find_pattern(
                 module_info.base_address,
                 module_info.module_size as usize,
                 &*signature.pattern,
-            )?
+            )
+            .map_err(|err| {
+                log::error!(
+                    "pattern search failed for '{}' in [{:#x}..{:#x}): {}",
+                    signature.debug_name,
+                    search_start,
+                    search_end,
+                    err
+                );
+                err
+            })?
             .with_context(|| {
                 format!(
                     "{} {}",
@@ -301,9 +327,29 @@ impl PubgHandle {
                     signature.debug_name
                 )
             })?;
+        log::debug!(
+            "pattern '{}' found at inst_offset={:#x} (RVA {:#x})",
+            signature.debug_name,
+            inst_offset,
+            self.module_address(module, inst_offset).unwrap_or(u64::MAX)
+        );
 
-        let value = u32::read_object(&*self.create_memory_view(), inst_offset + signature.offset)
-            .map_err(|err| anyhow::anyhow!("{}", err))? as u64;
+        let read_addr = inst_offset + signature.offset;
+        log::debug!(
+            "reading u32 for '{}' at {:#x} (inst_offset {:#x} + offset {:#x})",
+            signature.debug_name,
+            read_addr,
+            inst_offset,
+            signature.offset
+        );
+        let value = u32::read_object(&*self.create_memory_view(), read_addr).map_err(|err| {
+            anyhow::anyhow!(
+                "reading u32 at {:#x} for '{}' failed: {}",
+                read_addr,
+                signature.debug_name,
+                err
+            )
+        })? as u64;
         let value = match &signature.value_type {
             SignatureType::Offset => value,
             SignatureType::RelativeAddress { inst_length } => inst_offset + value + inst_length,
