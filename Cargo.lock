@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "pubg"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "env_logger",
@@ -751,7 +751,7 @@ dependencies = [
 
 [[package]]
 name = "pubg_controller"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "chrono",
