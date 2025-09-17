@@ -1,41 +1,32 @@
-//Version 37.2.1.81
-//The offset has not been tested, if there is an error please let me know.
-constexpr uint64_t XenuineDecrypt = 0xF37DA28;
-constexpr uint64_t GWorld = 0x10C1DE98;
-constexpr uint64_t Names = 0x10E63E10;
-constexpr uint64_t NamesOffset = 0x0000;
-constexpr uint64_t ElementsPerChunk = 0x40AC;
- 
-constexpr uint64_t Ror = 0x1;
-constexpr uint64_t rval = 0x0006;
-constexpr uint64_t sval = 0x000A;
-constexpr uint64_t offset = 0x24;
-constexpr uint64_t xor_key_1 = 0x5D248F36;
-constexpr uint64_t xor_key_2 = 0xAC36B707;
- 
-constexpr uint64_t GameInstance = 0x1A0;
-constexpr uint64_t LocalPlayers = 0xD0;
-constexpr uint64_t Actors = 0x1D0;
-constexpr uint64_t ComponentLocation = 0x240;
-constexpr uint64_t CurrentLevel = 0x50;
-constexpr uint64_t PlayerController = 0x38;
-constexpr uint64_t PlayerCameraManager = 0x4E0;
-constexpr uint64_t CameraPos = 0xA80;
-constexpr uint64_t CameraRot = 0xAA8;
-constexpr uint64_t RootComponent = 0x318;
-constexpr uint64_t Mesh = 0x580;
-constexpr uint64_t Health = 0xA30;
-constexpr uint64_t LastTeamNum = 0x10D0;
-constexpr uint64_t bAlwaysCreatePhysicsState = 0x498;
- 
-constexpr uint64_t Health0 = 0x1C8;
-constexpr uint64_t Health1 = 0xA50;
-constexpr uint64_t Health2 = 0xA64;
-constexpr uint64_t Health3 = 0xA44;
-constexpr uint64_t Health4 = 0xA30;
-constexpr uint64_t Health5 = 0xA45;
-constexpr uint64_t Health6 = 0xA40;
- 
+//Version 37.2.1.85
+constexpr uint64_t XenuineDecrypt = 0x0F2F5F28;
+constexpr uint64_t GWorld = 0x10910A98;
+constexpr uint64_t Names = 0x10B56A90;
+constexpr uint64_t ElementsPerChunk = 0x41BC;
+    
+constexpr uint64_t GameInstance = 0x0868;
+constexpr uint64_t LocalPlayers = 0x00F0;
+constexpr uint64_t Actors = 0x01E0;
+constexpr uint64_t ComponentLocation = 0x02F0;
+constexpr uint64_t CurrentLevel = 0x0110;
+constexpr uint64_t PlayerController = 0x0030;
+constexpr uint64_t PlayerCameraManager = 0x04C0;
+constexpr uint64_t CameraPos = 0x1014;
+constexpr uint64_t CameraRot = 0x15A0;
+constexpr uint64_t RootComponent = 0x0028;
+constexpr uint64_t Mesh = 0x0480;
+constexpr uint64_t Health = 0x0980;
+constexpr uint64_t LastTeamNum = 0x1CA0;
+constexpr uint64_t bAlwaysCreatePhysicsState = 0x0488;
+    
+constexpr uint64_t Health0 = 0x0350;
+constexpr uint64_t Health1 = 0x0970;
+constexpr uint64_t Health2 = 0x0A40;
+constexpr uint64_t Health3 = 0x0994;
+constexpr uint64_t Health4 = 0x0980;
+constexpr uint64_t Health5 = 0x0995;
+constexpr uint64_t Health6 = 0x0990;
+    
 constexpr uint64_t HealthXorKeys0 = 0xCEC7A59A;
 constexpr uint64_t HealthXorKeys1 = 0x9B63B2F1;
 constexpr uint64_t HealthXorKeys2 = 0xCAF395BD;
@@ -52,3 +43,9 @@ constexpr uint64_t HealthXorKeys12 = 0xBDEC34D5;
 constexpr uint64_t HealthXorKeys13 = 0xF1936B07;
 constexpr uint64_t HealthXorKeys14 = 0x6B099E38;
 constexpr uint64_t HealthXorKeys15 = 0xE7D22A2B;
+    
+constexpr uint64_t offset = 0x0010;
+DWORD DecryptCIndex(DWORD value)
+{
+    return value ^ (value << 16) ^ 0x49469D07;
+}
